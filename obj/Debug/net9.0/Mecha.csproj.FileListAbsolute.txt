@@ -50,3 +50,4 @@
 /Users/anphan/Desktop/Mecha/Backend/Mecha/bin/Debug/net9.0/Swashbuckle.AspNetCore.SwaggerUI.dll
 /Users/anphan/Desktop/Mecha/Backend/Mecha/bin/Debug/net9.0/System.IdentityModel.Tokens.Jwt.dll
 /Users/anphan/Desktop/Mecha/Backend/Mecha/bin/Debug/net9.0/AspNet.Security.OAuth.Discord.dll
+/Users/anphan/Desktop/Mecha/Backend/Mecha/obj/Debug/net9.0/Mecha.sourcelink.json

@@ -1,3 +1,4 @@
+using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -10,19 +11,22 @@ namespace Mecha.Models
         public int IdUser { get; set; }
 
         [Required, MaxLength(255)]
-        public string Username { get; set; }
+        public string Username { get; set; } = string.Empty;
 
         [Required, MaxLength(100)]
-        public string Email { get; set; }
+        public string Email { get; set; } = string.Empty;
 
         [Required, MaxLength(10)]
-        public string Phone { get; set; }
+        public string Phone { get; set; } = string.Empty;
 
         [Required]
-        public string PassWords { get; set; }
+        public string PassWords { get; set; } = string.Empty;
 
-        public string Roles { get; set; } = "user";
-        public string DiscordId {get;set;}
+        [MaxLength(50)]
+        public string? Roles { get; set; } = "user";
+
+        [MaxLength(255)]
+        public string? DiscordId { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }

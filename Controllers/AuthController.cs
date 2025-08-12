@@ -35,7 +35,8 @@ namespace Mecha.Controllers
                 Email = request.Email,
                 Phone = request.Phone,
                 PassWords = hashedPassword,
-                Roles = "user"
+                Roles = "user",
+                StyleId = request.StyleId
             };
 
             _context.Users.Add(user);

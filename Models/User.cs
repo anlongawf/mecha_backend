@@ -29,5 +29,11 @@ namespace Mecha.Models
         public string? DiscordId { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        [ForeignKey("Style")]
+        [MaxLength(50)]
+        public string? StyleId { get; set; }
+
+        public StyleModel? Style { get; set; }
     }
 }

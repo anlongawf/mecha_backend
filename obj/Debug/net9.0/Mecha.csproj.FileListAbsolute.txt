@@ -51,3 +51,14 @@
 /Users/anphan/Desktop/Mecha/Backend/Mecha/bin/Debug/net9.0/System.IdentityModel.Tokens.Jwt.dll
 /Users/anphan/Desktop/Mecha/Backend/Mecha/bin/Debug/net9.0/AspNet.Security.OAuth.Discord.dll
 /Users/anphan/Desktop/Mecha/Backend/Mecha/obj/Debug/net9.0/Mecha.sourcelink.json
+/Users/anphan/Desktop/Mecha/Backend/Mecha/bin/Debug/net9.0/Discord.Net.Commands.dll
+/Users/anphan/Desktop/Mecha/Backend/Mecha/bin/Debug/net9.0/Discord.Net.Core.dll
+/Users/anphan/Desktop/Mecha/Backend/Mecha/bin/Debug/net9.0/Discord.Net.Interactions.dll
+/Users/anphan/Desktop/Mecha/Backend/Mecha/bin/Debug/net9.0/Discord.Net.Rest.dll
+/Users/anphan/Desktop/Mecha/Backend/Mecha/bin/Debug/net9.0/Discord.Net.Webhook.dll
+/Users/anphan/Desktop/Mecha/Backend/Mecha/bin/Debug/net9.0/Discord.Net.WebSocket.dll
+/Users/anphan/Desktop/Mecha/Backend/Mecha/bin/Debug/net9.0/Microsoft.Bcl.AsyncInterfaces.dll
+/Users/anphan/Desktop/Mecha/Backend/Mecha/bin/Debug/net9.0/Newtonsoft.Json.dll
+/Users/anphan/Desktop/Mecha/Backend/Mecha/bin/Debug/net9.0/System.Interactive.Async.dll
+/Users/anphan/Desktop/Mecha/Backend/Mecha/bin/Debug/net9.0/System.Linq.Async.dll
+/Users/anphan/Desktop/Mecha/Backend/Mecha/bin/Debug/net9.0/System.Reactive.dll

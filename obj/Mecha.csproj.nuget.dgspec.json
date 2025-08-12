@@ -52,6 +52,10 @@
               "target": "Package",
               "version": "[2.7.0-beta.98, )"
             },
+            "Discord.Net": {
+              "target": "Package",
+              "version": "[3.18.0, )"
+            },
             "Microsoft.AspNetCore.Authentication.Core": {
               "target": "Package",
               "version": "[2.3.0, )"

@@ -9,16 +9,28 @@ using AspNet.Security.OAuth.Discord;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// CORS cho frontend
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend",
+        policy =>
+        {
+            policy.WithOrigins("http://localhost:5173")
+                  .AllowAnyHeader()
+                  .AllowAnyMethod();
+        });
+});
+
 // Kết nối MariaDB
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseMySql(builder.Configuration.GetConnectionString("MariaDb"),
-        new MySqlServerVersion(new Version(10, 5, 0)) // version MariaDB
+        new MySqlServerVersion(new Version(10, 5, 0))
     ));
 
 builder.Services.AddScoped<JwtService>();
-
 builder.Services.AddControllers();
 
+// JWT Auth
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -30,15 +42,13 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateIssuerSigningKey = true,
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidAudience = builder.Configuration["Jwt:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"])
+            )
         };
     });
 
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-
-// Config discord
-
+// Discord OAuth
 builder.Services.AddAuthentication(options =>
     {
         options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
@@ -51,19 +61,26 @@ builder.Services.AddAuthentication(options =>
         discordOptions.ClientSecret = builder.Configuration["Discord:ClientSecret"];
         discordOptions.CallbackPath = "/api/auth/discord/callback";
         discordOptions.SaveTokens = true;
-
         discordOptions.Scope.Add("identify");
         discordOptions.Scope.Add("email");
-
-        discordOptions.Events.OnCreatingTicket = context =>
-        {
-            return Task.CompletedTask;
-        };
+        discordOptions.Events.OnCreatingTicket = context => Task.CompletedTask;
     });
+
+builder.Services.AddSingleton<DiscordActivityService>();
+builder.Services.AddHostedService<DiscordBotHostedService>();
+
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
 var app = builder.Build();
 
 app.UseSwagger();
 app.UseSwaggerUI();
+
+app.UseHttpsRedirection();
+
+// Bật CORS trước Authentication
+app.UseCors("AllowFrontend");
 
 app.UseAuthentication();
 app.UseAuthorization();

@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Mecha")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+238ef8642faeba0239d15858b554df41f8bd373d")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+72fab396860fca2d235ee056f9369f2f15a9997e")]
 [assembly: System.Reflection.AssemblyProductAttribute("Mecha")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Mecha")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

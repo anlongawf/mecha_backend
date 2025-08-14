@@ -10,17 +10,16 @@ namespace Mecha.Models
         [Key]
         public int IdUser { get; set; }
 
-        [Required, MaxLength(255)]
-        public string Username { get; set; } = string.Empty;
+        [MaxLength(255)]
+        public string? Username { get; set; } // Changed to nullable
 
-        [Required, MaxLength(100)]
-        public string Email { get; set; } = string.Empty;
+        [MaxLength(100)]
+        public string? Email { get; set; } // Changed to nullable
 
-        [Required, MaxLength(10)]
-        public string Phone { get; set; } = string.Empty;
+        [MaxLength(10)]
+        public string? Phone { get; set; } // Changed to nullable
 
-        [Required]
-        public string PassWords { get; set; } = string.Empty;
+        public string? PassWords { get; set; } // Changed to nullable
 
         [MaxLength(50)]
         public string? Roles { get; set; } = "user";

@@ -8,9 +8,9 @@ namespace Mecha.Models
     {
         [Key]
         [Column("style_id")]
-        [Required]
         [MaxLength(50)]
-        public string StyleId { get; set; }
+        [Required] // StyleId should not be null as it's the primary key
+        public string StyleId { get; set; } = string.Empty;
 
         [Column("profile_avatar")]
         [MaxLength(255)]

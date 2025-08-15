@@ -45,8 +45,8 @@ namespace Mecha.Controllers
             });
         }
 
-        // PUT: api/profile/{username}
-        [HttpPut]
+        // POST: api/profile/{username}
+        [HttpPost]
         public async Task<IActionResult> UpdateProfile(string username, [FromBody] UpdateProfileDto dto)
         {
             if (dto == null)

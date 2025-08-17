@@ -33,16 +33,20 @@ namespace Mecha.Controllers
 
             return Ok(new
             {
-                user.Style.StyleId,
-                user.Style.ProfileAvatar,
-                user.Style.Background,
-                user.Style.Audio,
-                user.Style.CustomCursor,
-                user.Style.Description,
-                user.Style.Username,
-                user.Style.EffectUsername,
-                user.Style.Location
+                styleId = user.Style.StyleId,
+                profileAvatar = user.Style.ProfileAvatar,
+                background = user.Style.Background,
+                audio = user.Style.Audio,
+                audioImage = user.Style.AudioImage,
+                audioTitle = user.Style.AudioTitle,
+                customCursor = user.Style.CustomCursor,
+                description = user.Style.Description,
+                username = user.Style.Username,
+                effectUsername = user.Style.EffectUsername,
+                location = user.Style.Location
             });
+
+
         }
 
         // POST: api/profile/{username}
@@ -91,15 +95,16 @@ namespace Mecha.Controllers
                     styleId = Guid.NewGuid().ToString();
                     
                     var insertStyleSql = @"
-                        INSERT INTO style (style_id, profile_avatar, background, audio, custom_cursor, description, username, effect_username, location)
-                        VALUES (@styleId, @profileAvatar, @background, @audio, @customCursor, @description, @username, @effectUsername, @location)";
-                    
+                        INSERT INTO style (style_id, profile_avatar, background, audio, audioimage, audiotitle, custom_cursor, description, username, effect_username, location)
+                        VALUES (@styleId, @profileAvatar, @background, @audio, @audioImage, @audioTitle, @customCursor, @description, @username, @effectUsername, @location)";
+                                        
                     using var insertCommand = _context.Database.GetDbConnection().CreateCommand();
-                    insertCommand.CommandText = insertStyleSql;
                     insertCommand.Parameters.Add(CreateParameter(insertCommand, "@styleId", styleId));
                     insertCommand.Parameters.Add(CreateParameter(insertCommand, "@profileAvatar", dto.ProfileAvatar));
                     insertCommand.Parameters.Add(CreateParameter(insertCommand, "@background", dto.Background));
                     insertCommand.Parameters.Add(CreateParameter(insertCommand, "@audio", dto.Audio));
+                    insertCommand.Parameters.Add(CreateParameter(insertCommand, "@audioImage", dto.audioimage)); 
+                    insertCommand.Parameters.Add(CreateParameter(insertCommand, "@audioTitle", dto.audiotitle)); 
                     insertCommand.Parameters.Add(CreateParameter(insertCommand, "@customCursor", dto.CustomCursor));
                     insertCommand.Parameters.Add(CreateParameter(insertCommand, "@description", dto.Description));
                     insertCommand.Parameters.Add(CreateParameter(insertCommand, "@username", dto.Username ?? username));
@@ -168,6 +173,19 @@ namespace Mecha.Controllers
                         parameters.Add(CreateParameter(updateCommand, "@location", dto.Location));
                     }
                     
+                    if (dto.audioimage != null)
+                    {
+                        updateParts.Add("audioimage = @audioImage");
+                        parameters.Add(CreateParameter(updateCommand, "@audioImage", dto.audioimage));
+                    }
+
+                    if (dto.audiotitle != null)
+                    {
+                        updateParts.Add("audiotitle = @audioTitle");
+                        parameters.Add(CreateParameter(updateCommand, "@audioTitle", dto.audiotitle));
+                    }
+
+                    
                     if (updateParts.Any())
                     {
                         var updateStyleSql = $"UPDATE style SET {string.Join(", ", updateParts)} WHERE style_id = @styleId";
@@ -185,8 +203,9 @@ namespace Mecha.Controllers
 
                 // Get the updated style data
                 var getUpdatedStyleSql = @"
-                    SELECT style_id, profile_avatar, background, audio, custom_cursor, description, username, effect_username, location
-                    FROM style WHERE style_id = @styleId";
+                        SELECT style_id, profile_avatar, background, audio, audioimage, audiotitle, custom_cursor, description, username, effect_username, location
+                        FROM style WHERE style_id = @styleId";
+
                 
                 using var getStyleCommand = _context.Database.GetDbConnection().CreateCommand();
                 getStyleCommand.CommandText = getUpdatedStyleSql;
@@ -198,15 +217,17 @@ namespace Mecha.Controllers
                 {
                     var updatedStyle = new
                     {
-                        StyleId = styleReader["style_id"]?.ToString() ?? "",
-                        ProfileAvatar = styleReader["profile_avatar"]?.ToString() ?? "",
-                        Background = styleReader["background"]?.ToString() ?? "",
-                        Audio = styleReader["audio"]?.ToString() ?? "",
-                        CustomCursor = styleReader["custom_cursor"]?.ToString() ?? "",
-                        Description = styleReader["description"]?.ToString() ?? "",
-                        Username = styleReader["username"]?.ToString() ?? "",
-                        EffectUsername = styleReader["effect_username"]?.ToString() ?? "",
-                        Location = styleReader["location"]?.ToString() ?? ""
+                        styleId = styleReader["style_id"]?.ToString() ?? "",
+                        profileAvatar = styleReader["profile_avatar"]?.ToString() ?? "",
+                        background = styleReader["background"]?.ToString() ?? "",
+                        audio = styleReader["audio"]?.ToString() ?? "",
+                        audioImage = styleReader["audioimage"]?.ToString() ?? "", // camelCase
+                        audioTitle = styleReader["audiotitle"]?.ToString() ?? "",  // camelCase
+                        customCursor = styleReader["custom_cursor"]?.ToString() ?? "",
+                        description = styleReader["description"]?.ToString() ?? "",
+                        username = styleReader["username"]?.ToString() ?? "",
+                        effectUsername = styleReader["effect_username"]?.ToString() ?? "",
+                        location = styleReader["location"]?.ToString() ?? ""
                     };
                     
                     return Ok(new

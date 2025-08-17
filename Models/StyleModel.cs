@@ -9,7 +9,7 @@ namespace Mecha.Models
         [Key]
         [Column("style_id")]
         [MaxLength(50)]
-        [Required] // StyleId should not be null as it's the primary key
+        [Required] 
         public string StyleId { get; set; } = string.Empty;
 
         [Column("profile_avatar")]
@@ -43,5 +43,13 @@ namespace Mecha.Models
         [Column("location")]
         [MaxLength(255)]
         public string? Location { get; set; }
+        
+        [Column("AudioImage")]
+        [MaxLength(255)]
+        public string? AudioImage { get; set; }
+        
+        [Column("AudioTitle")]
+        [MaxLength(255)]
+        public string? AudioTitle { get; set; }
     }
 }

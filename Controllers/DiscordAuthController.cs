@@ -28,31 +28,28 @@ namespace Mecha.Controllers
         {
             var properties = new AuthenticationProperties
             {
-                RedirectUri = Url.Action(nameof(Callback))
+                RedirectUri = Url.Action(nameof(CallbackPopup))
             };
-            
             return Challenge(properties, DiscordAuthenticationDefaults.AuthenticationScheme);
         }
 
         [HttpGet("callback")]
-        public async Task<IActionResult> Callback()
+        public async Task<IActionResult> CallbackPopup()
         {
             var authenticateResult = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-            
+
             if (!authenticateResult.Succeeded)
-                return BadRequest("Authentication failed");
+                return Content("<script>window.opener.postMessage({ error: 'Auth failed' }, '*'); window.close();</script>", "text/html");
 
             var claims = authenticateResult.Principal.Claims;
             var discordId = claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
             var username = claims.FirstOrDefault(c => c.Type == ClaimTypes.Name)?.Value;
             var email = claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value;
 
-            // Tìm hoặc tạo user
             var user = await _context.Users.FirstOrDefaultAsync(u => u.DiscordId == discordId);
-            
+
             if (user == null)
             {
-                // Tạo user mới từ Discord
                 user = new User
                 {
                     Username = username ?? $"discord_{discordId}",
@@ -60,19 +57,33 @@ namespace Mecha.Controllers
                     DiscordId = discordId,
                     PassWords = Guid.NewGuid().ToString(),
                     Roles = "user",
-                    Phone = "" // Discord không cung cấp phone
+                    Phone = ""
                 };
-                
                 _context.Users.Add(user);
                 await _context.SaveChangesAsync();
             }
 
-            // Tạo JWT token
             var token = _jwtService.GenerateToken(user.Username, user.Roles);
 
-            // Redirect về frontend với token
-            return Redirect($"http://localhost:3000/auth/success?token={token}");
+            var script = $@"
+        <script>
+            window.opener.postMessage({{
+                token: '{token}',
+                user: {{
+                    idUser: {user.IdUser},
+                    username: '{user.Username}',
+                    email: '{user.Email}',
+                    phone: '{user.Phone}',
+                    roles: '{user.Roles}'
+                }}
+            }}, '*');
+            window.close();
+        </script>
+    ";
+            return Content(script, "text/html");
         }
+
+
 
         [HttpPost("logout")]
         public async Task<IActionResult> Logout()

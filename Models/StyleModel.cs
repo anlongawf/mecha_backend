@@ -44,11 +44,11 @@ namespace Mecha.Models
         [MaxLength(255)]
         public string? Location { get; set; }
         
-        [Column("AudioImage")]
+        [Column("audioimage")]
         [MaxLength(255)]
         public string? AudioImage { get; set; }
         
-        [Column("AudioTitle")]
+        [Column("audiotitle")]
         [MaxLength(255)]
         public string? AudioTitle { get; set; }
     }

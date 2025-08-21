@@ -10,7 +10,7 @@ namespace Mecha.DTO
         public string? Username { get; set; }
         public string? EffectUsername { get; set; }
         public string? Location { get; set; }
-        public string? audiotitle { get; set; }
-        public string? audioimage { get; set; }
+        public string? AudioTitle { get; set; }
+        public string? AudioImage { get; set; }
     }
 }

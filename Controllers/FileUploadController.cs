@@ -13,86 +13,86 @@ namespace Mecha.Controllers
         {
             _environment = environment;
         }
-
+        
         [HttpPost("upload")]
-        public async Task<IActionResult> UploadFile(IFormFile file, [FromQuery] string type = "image")
+public async Task<IActionResult> UploadFile(IFormFile file, [FromQuery] string type = "image")
+{
+    try
+    {
+        if (file == null || file.Length == 0)
+            return BadRequest(new { message = "No file uploaded" });
+
+        if (file.Length > _maxFileSize)
+            return BadRequest(new { message = $"File size exceeds {_maxFileSize / (1024 * 1024)}MB limit" });
+
+        var allowedExtensions = GetAllowedExtensions(type);
+        var fileExtension = Path.GetExtension(file.FileName).ToLowerInvariant();
+        
+        if (!allowedExtensions.Contains(fileExtension))
+            return BadRequest(new { message = $"File type {fileExtension} is not allowed for {type}" });
+
+        var uploadsPath = Path.Combine(_environment.ContentRootPath, "uploads", type);
+        if (!Directory.Exists(uploadsPath))
+            Directory.CreateDirectory(uploadsPath);
+
+        var fileName = $"{Guid.NewGuid()}{fileExtension}";
+        var filePath = Path.Combine(uploadsPath, fileName);
+
+        using (var stream = new FileStream(filePath, FileMode.Create))
         {
-            try
-            {
-                if (file == null || file.Length == 0)
-                    return BadRequest(new { message = "No file uploaded" });
-
-                // Kiểm tra kích thước file
-                if (file.Length > _maxFileSize)
-                    return BadRequest(new { message = $"File size exceeds {_maxFileSize / (1024 * 1024)}MB limit" });
-
-                // Kiểm tra loại file
-                var allowedExtensions = GetAllowedExtensions(type);
-                var fileExtension = Path.GetExtension(file.FileName).ToLowerInvariant();
-                
-                if (!allowedExtensions.Contains(fileExtension))
-                    return BadRequest(new { message = $"File type {fileExtension} is not allowed for {type}" });
-
-                // Tạo thư mục uploads nếu chưa có
-                var uploadsPath = Path.Combine(_environment.ContentRootPath, "uploads", type);
-                if (!Directory.Exists(uploadsPath))
-                    Directory.CreateDirectory(uploadsPath);
-
-                // Tạo tên file unique
-                var fileName = $"{Guid.NewGuid()}{fileExtension}";
-                var filePath = Path.Combine(uploadsPath, fileName);
-
-                // Lưu file
-                using (var stream = new FileStream(filePath, FileMode.Create))
-                {
-                    await file.CopyToAsync(stream);
-                }
-
-                // Trả về đường dẫn relative
-                var relativePath = $"/uploads/{type}/{fileName}";
-
-                return Ok(new
-                {
-                    message = "File uploaded successfully",
-                    filePath = relativePath,
-                    fileName = fileName,
-                    originalName = file.FileName,
-                    fileSize = file.Length,
-                    contentType = file.ContentType
-                });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "Error uploading file", error = ex.Message });
-            }
+            await file.CopyToAsync(stream);
         }
 
-        [HttpDelete("delete")]
-        public IActionResult DeleteFile([FromQuery] string filePath)
+        var relativePath = $"/uploads/{type}/{fileName}";
+
+        // Trả về property "url" để frontend dùng trực tiếp
+        return Ok(new
         {
-            try
-            {
-                if (string.IsNullOrEmpty(filePath))
-                    return BadRequest(new { message = "File path is required" });
+            message = "File uploaded successfully",
+            url = relativePath,
+            fileName = fileName,
+            originalName = file.FileName,
+            fileSize = file.Length,
+            contentType = file.ContentType
+        });
+    }
+    catch (Exception ex)
+    {
+        return StatusCode(500, new { message = "Error uploading file", error = ex.Message });
+    }
+}
 
-                // Chỉ cho phép xóa file trong thư mục uploads
-                if (!filePath.StartsWith("/uploads/"))
-                    return BadRequest(new { message = "Invalid file path" });
+[HttpDelete("delete")]
+public IActionResult DeleteFile([FromBody] DeleteFileRequest request)
+{
+    try
+    {
+        if (request == null || string.IsNullOrEmpty(request.Path))
+            return BadRequest(new { message = "File path is required" });
 
-                var fullPath = Path.Combine(_environment.ContentRootPath, filePath.TrimStart('/').Replace('/', Path.DirectorySeparatorChar));
-                
-                if (!System.IO.File.Exists(fullPath))
-                    return NotFound(new { message = "File not found" });
+        if (!request.Path.StartsWith("/uploads/"))
+            return BadRequest(new { message = "Invalid file path" });
 
-                System.IO.File.Delete(fullPath);
+        var fullPath = Path.Combine(_environment.ContentRootPath, request.Path.TrimStart('/').Replace('/', Path.DirectorySeparatorChar));
+        
+        if (!System.IO.File.Exists(fullPath))
+            return NotFound(new { message = "File not found" });
 
-                return Ok(new { message = "File deleted successfully" });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "Error deleting file", error = ex.Message });
-            }
+        System.IO.File.Delete(fullPath);
+
+        return Ok(new { message = "File deleted successfully" });
+    }
+    catch (Exception ex)
+    {
+        return StatusCode(500, new { message = "Error deleting file", error = ex.Message });
+    }
+}
+
+        public class DeleteFileRequest
+        {
+            public string Path { get; set; } = "";
         }
+
 
         private string[] GetAllowedExtensions(string type)
         {

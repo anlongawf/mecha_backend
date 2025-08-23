@@ -5,6 +5,7 @@ using Mecha.Models;
 using Mecha.Services;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 
 namespace Mecha.Controllers
 {
@@ -24,26 +25,54 @@ namespace Mecha.Controllers
         [HttpPost("register")]
         public async Task<IActionResult> Register(RegisterRequest request)
         {
+            // Kiểm tra username hoặc email đã tồn tại
             if (await _context.Users.AnyAsync(u => u.Username == request.Username || u.Email == request.Email))
                 return BadRequest("Username or Email already exists");
 
+            // Hash password
             var hashedPassword = HashPassword(request.Password);
 
+            // Tạo user mới
             var user = new User
             {
                 Username = request.Username,
                 Email = request.Email,
                 Phone = request.Phone,
                 PassWords = hashedPassword,
-                Roles = "user",
-                StyleId = request.StyleId
+                Roles = "user"
+                // Không cần gán StyleId nếu IdUser là auto-increment
             };
 
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
 
-            return Ok(new { message = "User registered successfully" });
+            // Lấy IdUser vừa tạo (auto-increment)
+            int newUserId = user.IdUser;
+
+            // Tạo record UserStyles mặc định
+            var userStyles = new UserStyle
+            {
+                IdUser = newUserId,
+                Styles = JsonSerializer.Serialize(new Dictionary<string, object>
+                {
+                    { "background", "#ffffff" },
+                    { "profileAvatar", "" },
+                    { "audio", "" },
+                    { "customCursor", "" },
+                    { "description", "" },
+                    { "effectUsername", "" },
+                    { "location", "" },
+                    { "audioImage", "" },
+                    { "audioTitle", "" }
+                })
+            };
+
+            _context.UserStyles.Add(userStyles);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "User registered successfully", userId = newUserId });
         }
+
 
         [HttpPost("login")]
         public async Task<IActionResult> Login(LoginRequest request)

@@ -14,6 +14,36 @@ public class UserStylesController : ControllerBase
     {
         _context = context;
     }
+    
+    // GET: api/UserStyles/username/{username}
+    [HttpGet("username/{username}")]
+    public async Task<IActionResult> GetUserStyleByUsername(string username)
+    {
+        // Tìm style dựa trên username
+        var style = await _context.Styles
+            .FirstOrDefaultAsync(s => s.Username == username);
+
+        if (style == null)
+            return NotFound(new { message = "Style not found for this user" });
+
+        // Trả về các thuộc tính style
+        var dto = new
+        {
+            style.StyleId,
+            style.ProfileAvatar,
+            style.Background,
+            style.Audio,
+            style.CustomCursor,
+            style.Description,
+            style.EffectUsername,
+            style.Location,
+            style.AudioImage,
+            style.AudioTitle
+        };
+
+        return Ok(dto);
+    }
+
 
     // GET: api/UserStyles/19
     [HttpGet("{idUser}")]

@@ -346,6 +346,236 @@ namespace Mecha.Controllers
                 }
             }
         }
+        
+        // POST: api/profile/{id}
+[HttpPost("{id}")]
+public async Task<IActionResult> UpdateProfileByIdPost(int id, [FromBody] UpdateProfileDto dto)
+{
+    return await UpdateProfileInternal(id, dto);
+}
+
+// PUT: api/profile/{id}
+[HttpPut("{id}")]
+public async Task<IActionResult> UpdateProfileByIdPut(int id, [FromBody] UpdateProfileDto dto)
+{
+    return await UpdateProfileInternal(id, dto);
+}
+
+private async Task<IActionResult> UpdateProfileInternal(int id, UpdateProfileDto dto)
+{
+    if (dto == null)
+        return BadRequest(new { message = "Invalid body" });
+
+    try
+    {
+        // Check if user exists using raw SQL
+        var userSql = "SELECT IdUser, Username, StyleId FROM users WHERE IdUser = @userId";
+        using var userCommand = _context.Database.GetDbConnection().CreateCommand();
+        userCommand.CommandText = userSql;
+        var userParam = userCommand.CreateParameter();
+        userParam.ParameterName = "@userId";
+        userParam.Value = id;
+        userCommand.Parameters.Add(userParam);
+
+        await _context.Database.OpenConnectionAsync();
+
+        string? currentStyleId = null;
+        string? currentUsername = null;
+
+        using (var reader = await userCommand.ExecuteReaderAsync())
+        {
+            if (await reader.ReadAsync())
+            {
+                currentStyleId = reader["StyleId"]?.ToString();
+                currentUsername = reader["Username"]?.ToString();
+            }
+        }
+
+        if (currentUsername == null)
+            return NotFound(new { message = "User not found" });
+
+        // Handle username change if provided and different
+        string updatedUsername = currentUsername;
+        if (!string.IsNullOrWhiteSpace(dto.Username) && dto.Username != currentUsername)
+        {
+            var checkUsernameSql = "SELECT COUNT(*) FROM users WHERE Username = @newUsername AND IdUser != @userId";
+            using var checkCommand = _context.Database.GetDbConnection().CreateCommand();
+            checkCommand.CommandText = checkUsernameSql;
+            checkCommand.Parameters.Add(CreateParameter(checkCommand, "@newUsername", dto.Username));
+            checkCommand.Parameters.Add(CreateParameter(checkCommand, "@userId", id));
+
+            var existingCount = Convert.ToInt32(await checkCommand.ExecuteScalarAsync());
+            if (existingCount > 0)
+                return Conflict(new { message = "Username already exists" });
+
+            var updateUsernameSql = "UPDATE users SET Username = @newUsername WHERE IdUser = @userId";
+            using var updateUsernameCommand = _context.Database.GetDbConnection().CreateCommand();
+            updateUsernameCommand.CommandText = updateUsernameSql;
+            updateUsernameCommand.Parameters.Add(CreateParameter(updateUsernameCommand, "@newUsername", dto.Username));
+            updateUsernameCommand.Parameters.Add(CreateParameter(updateUsernameCommand, "@userId", id));
+
+            await updateUsernameCommand.ExecuteNonQueryAsync();
+            updatedUsername = dto.Username;
+        }
+
+        string styleId;
+
+        if (string.IsNullOrEmpty(currentStyleId))
+        {
+            // Insert new style
+            styleId = Guid.NewGuid().ToString();
+
+            var insertStyleSql = @"
+                INSERT INTO style (style_id, profile_avatar, background, audio, AudioImage, AudioTitle, custom_cursor, description, username, effect_username, location)
+                VALUES (@styleId, @profileAvatar, @background, @audio, @audioImage, @audioTitle, @customCursor, @description, @username, @effectUsername, @location)";
+            using var insertCommand = _context.Database.GetDbConnection().CreateCommand();
+            insertCommand.CommandText = insertStyleSql;
+            insertCommand.Parameters.Add(CreateParameter(insertCommand, "@styleId", styleId));
+            insertCommand.Parameters.Add(CreateParameter(insertCommand, "@profileAvatar", dto.ProfileAvatar));
+            insertCommand.Parameters.Add(CreateParameter(insertCommand, "@background", dto.Background));
+            insertCommand.Parameters.Add(CreateParameter(insertCommand, "@audio", dto.Audio));
+            insertCommand.Parameters.Add(CreateParameter(insertCommand, "@audioImage", dto.AudioImage));
+            insertCommand.Parameters.Add(CreateParameter(insertCommand, "@audioTitle", dto.AudioTitle));
+            insertCommand.Parameters.Add(CreateParameter(insertCommand, "@customCursor", dto.CustomCursor));
+            insertCommand.Parameters.Add(CreateParameter(insertCommand, "@description", dto.Description));
+            insertCommand.Parameters.Add(CreateParameter(insertCommand, "@username", updatedUsername));
+            insertCommand.Parameters.Add(CreateParameter(insertCommand, "@effectUsername", dto.EffectUsername));
+            insertCommand.Parameters.Add(CreateParameter(insertCommand, "@location", dto.Location));
+
+            await insertCommand.ExecuteNonQueryAsync();
+
+            var updateUserSql = "UPDATE users SET StyleId = @styleId WHERE IdUser = @userId";
+            using var updateUserCommand = _context.Database.GetDbConnection().CreateCommand();
+            updateUserCommand.CommandText = updateUserSql;
+            updateUserCommand.Parameters.Add(CreateParameter(updateUserCommand, "@styleId", styleId));
+            updateUserCommand.Parameters.Add(CreateParameter(updateUserCommand, "@userId", id));
+
+            await updateUserCommand.ExecuteNonQueryAsync();
+        }
+        else
+        {
+            // Update existing style
+            styleId = currentStyleId;
+
+            var updateParts = new List<string>();
+            var parameters = new List<IDbDataParameter>();
+            using var updateCommand = _context.Database.GetDbConnection().CreateCommand();
+
+            if (dto.ProfileAvatar != null)
+            {
+                updateParts.Add("profile_avatar = @profileAvatar");
+                parameters.Add(CreateParameter(updateCommand, "@profileAvatar", dto.ProfileAvatar));
+            }
+            if (dto.Background != null)
+            {
+                updateParts.Add("background = @background");
+                parameters.Add(CreateParameter(updateCommand, "@background", dto.Background));
+            }
+            if (dto.Audio != null)
+            {
+                updateParts.Add("audio = @audio");
+                parameters.Add(CreateParameter(updateCommand, "@audio", dto.Audio));
+            }
+            if (dto.CustomCursor != null)
+            {
+                updateParts.Add("custom_cursor = @customCursor");
+                parameters.Add(CreateParameter(updateCommand, "@customCursor", dto.CustomCursor));
+            }
+            if (dto.Description != null)
+            {
+                updateParts.Add("description = @description");
+                parameters.Add(CreateParameter(updateCommand, "@description", dto.Description));
+            }
+            if (dto.Username != null)
+            {
+                updateParts.Add("username = @username");
+                parameters.Add(CreateParameter(updateCommand, "@username", updatedUsername));
+            }
+            if (dto.EffectUsername != null)
+            {
+                updateParts.Add("effect_username = @effectUsername");
+                parameters.Add(CreateParameter(updateCommand, "@effectUsername", dto.EffectUsername));
+            }
+            if (dto.Location != null)
+            {
+                updateParts.Add("location = @location");
+                parameters.Add(CreateParameter(updateCommand, "@location", dto.Location));
+            }
+            if (dto.AudioImage != null)
+            {
+                updateParts.Add("AudioImage = @audioImage");
+                parameters.Add(CreateParameter(updateCommand, "@audioImage", dto.AudioImage));
+            }
+            if (dto.AudioTitle != null)
+            {
+                updateParts.Add("AudioTitle = @audioTitle");
+                parameters.Add(CreateParameter(updateCommand, "@audioTitle", dto.AudioTitle));
+            }
+            if (updatedUsername != currentUsername)
+            {
+                updateParts.Add("username = @styleUsername");
+                parameters.Add(CreateParameter(updateCommand, "@styleUsername", updatedUsername));
+            }
+
+            if (updateParts.Any())
+            {
+                updateCommand.CommandText = $"UPDATE style SET {string.Join(", ", updateParts)} WHERE style_id = @styleId";
+                parameters.Add(CreateParameter(updateCommand, "@styleId", styleId));
+                foreach (var p in parameters) updateCommand.Parameters.Add(p);
+                await updateCommand.ExecuteNonQueryAsync();
+            }
+        }
+
+        // Return updated style
+        var getUpdatedStyleSql = @"
+            SELECT style_id, profile_avatar, background, audio, AudioImage, AudioTitle, custom_cursor, description, username, effect_username, location
+            FROM style WHERE style_id = @styleId";
+
+        using var getStyleCommand = _context.Database.GetDbConnection().CreateCommand();
+        getStyleCommand.CommandText = getUpdatedStyleSql;
+        getStyleCommand.Parameters.Add(CreateParameter(getStyleCommand, "@styleId", styleId));
+
+        using var styleReader = await getStyleCommand.ExecuteReaderAsync();
+        if (await styleReader.ReadAsync())
+        {
+            var updatedStyle = new
+            {
+                styleId = styleReader["style_id"]?.ToString() ?? "",
+                profileAvatar = styleReader["profile_avatar"]?.ToString() ?? "",
+                background = styleReader["background"]?.ToString() ?? "",
+                audio = styleReader["audio"]?.ToString() ?? "",
+                audioImage = styleReader["AudioImage"]?.ToString() ?? "",
+                audioTitle = styleReader["AudioTitle"]?.ToString() ?? "",
+                customCursor = styleReader["custom_cursor"]?.ToString() ?? "",
+                description = styleReader["description"]?.ToString() ?? "",
+                username = styleReader["username"]?.ToString() ?? "",
+                effectUsername = styleReader["effect_username"]?.ToString() ?? "",
+                location = styleReader["location"]?.ToString() ?? ""
+            };
+
+            return Ok(new
+            {
+                message = "Profile updated successfully",
+                Style = updatedStyle,
+                newUsername = updatedUsername != currentUsername ? updatedUsername : null
+            });
+        }
+
+        return StatusCode(500, new { message = "Failed to retrieve updated style" });
+    }
+    catch (Exception ex)
+    {
+        return StatusCode(500, new { message = "An error occurred while updating the profile", error = ex.Message });
+    }
+    finally
+    {
+        if (_context.Database.GetDbConnection().State == ConnectionState.Open)
+        {
+            await _context.Database.CloseConnectionAsync();
+        }
+    }
+}
+
 
         // POST: api/profile/username/{username} - Keep old endpoint for backward compatibility
         [HttpPost("username/{username}")]

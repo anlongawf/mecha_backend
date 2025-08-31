@@ -106,7 +106,7 @@ app.UseStaticFiles(new StaticFileOptions
 
 // Important: CORS must be before Authentication
 app.UseCors("AllowLocalFrontend");
-
+        
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();

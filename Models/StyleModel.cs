@@ -51,5 +51,6 @@ namespace Mecha.Models
         [Column("audiotitle")]
         [MaxLength(255)]
         public string? AudioTitle { get; set; }
+        public string? Social { get; set; }
     }
 }

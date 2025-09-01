@@ -2591,11 +2591,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "/Users/anphan/Desktop/MechaBE/Mecha.csproj",
+      "projectUniqueName": "/Users/anphan/Desktop/mechaBE/Mecha.csproj",
       "projectName": "Mecha",
-      "projectPath": "/Users/anphan/Desktop/MechaBE/Mecha.csproj",
+      "projectPath": "/Users/anphan/Desktop/mechaBE/Mecha.csproj",
       "packagesPath": "/Users/anphan/.nuget/packages/",
-      "outputPath": "/Users/anphan/Desktop/MechaBE/obj/",
+      "outputPath": "/Users/anphan/Desktop/mechaBE/obj/",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "/Users/anphan/.nuget/NuGet/NuGet.Config"

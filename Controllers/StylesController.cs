@@ -2,87 +2,79 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Mecha.Data;
 using Mecha.Models;
-using Mecha.DTO;
-using System.Text.Json;
 
 namespace Mecha.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class StyleSocialController : ControllerBase
+    public class StylesController : ControllerBase
     {
         private readonly AppDbContext _context;
 
-        public StyleSocialController(AppDbContext context)
+        public StylesController(AppDbContext context)
         {
             _context = context;
         }
 
-        // GET /api/StyleSocial/byUser/{userId}
-        [HttpGet("byUser/{userId}")]
-        public async Task<IActionResult> GetSocialByUser(int userId)
+        // GET: api/styles
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<StyleModel>>> GetStyles()
         {
-            var user = await _context.Users
-                .Include(u => u.Style)
-                .FirstOrDefaultAsync(u => u.IdUser == userId);
-
-            if (user == null || user.Style == null)
-                return NotFound(new { message = "Style not found for this user" });
-
-            var socialList = string.IsNullOrEmpty(user.Style.Social)
-                ? new List<SocialDto>()
-                : JsonSerializer.Deserialize<List<SocialDto>>(user.Style.Social);
-
-            return Ok(socialList);
+            return await _context.Styles.ToListAsync();
         }
 
-        // PUT /api/StyleSocial/byUser/{userId}
-        [HttpPut("byUser/{userId}")]
-        public async Task<IActionResult> UpdateSocialByUser(int userId, [FromBody] List<SocialDto> social)
+        // GET: api/styles/{id}
+        [HttpGet("{id}")]
+        public async Task<ActionResult<StyleModel>> GetStyle(string id)
         {
-            var user = await _context.Users
-                .Include(u => u.Style)
-                .FirstOrDefaultAsync(u => u.IdUser == userId);
+            var style = await _context.Styles.FindAsync(id);
+            if (style == null) return NotFound();
+            return style;
+        }
 
-            if (user == null || user.Style == null)
-                return NotFound(new { message = "Style not found for this user" });
-
-            user.Style.Social = JsonSerializer.Serialize(social);
+        // POST: api/styles
+        [HttpPost]
+        public async Task<ActionResult<StyleModel>> CreateStyle(StyleModel style)
+        {
+            _context.Styles.Add(style);
             await _context.SaveChangesAsync();
-
-            return Ok(new { message = "Updated successfully" });
+            return CreatedAtAction(nameof(GetStyle), new { id = style.StyleId }, style);
         }
-        
-        [HttpPost("byUser/{userId}/upload-icon")]
-        public async Task<IActionResult> UploadIcon(int userId, [FromForm] IFormFile iconFile)
+
+        // PUT: api/styles/{id}
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateStyle(string id, StyleModel style)
         {
-            if (iconFile == null || iconFile.Length == 0)
-                return BadRequest(new { message = "No file uploaded" });
+            if (id != style.StyleId) return BadRequest();
 
-            var user = await _context.Users.Include(u => u.Style)
-                .FirstOrDefaultAsync(u => u.IdUser == userId);
+            _context.Entry(style).State = EntityState.Modified;
 
-            if (user == null || user.Style == null)
-                return NotFound(new { message = "Style not found for this user" });
-
-            // Lưu file vào wwwroot/uploads hoặc folder bất kỳ
-            var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
-            if (!Directory.Exists(uploadsFolder))
-                Directory.CreateDirectory(uploadsFolder);
-
-            var fileName = $"{Guid.NewGuid()}{Path.GetExtension(iconFile.FileName)}";
-            var filePath = Path.Combine(uploadsFolder, fileName);
-
-            using (var stream = new FileStream(filePath, FileMode.Create))
+            try
             {
-                await iconFile.CopyToAsync(stream);
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!_context.Styles.Any(e => e.StyleId == id))
+                    return NotFound();
+                else
+                    throw;
             }
 
-            // Trả về URL có thể dùng trên frontend
-            var iconUrl = $"/uploads/{fileName}";
-
-            return Ok(new { iconUrl });
+            return NoContent();
         }
 
+        // DELETE: api/styles/{id}
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteStyle(string id)
+        {
+            var style = await _context.Styles.FindAsync(id);
+            if (style == null) return NotFound();
+
+            _context.Styles.Remove(style);
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
     }
 }

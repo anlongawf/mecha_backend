@@ -70,7 +70,6 @@ namespace Mecha.Controllers
                 customCursor = user.Style.CustomCursor,
                 description = user.Style.Description,
                 username = user.Style.Username,
-                effectUsername = user.Style.EffectUsername,
                 location = user.Style.Location
             });
         }
@@ -106,7 +105,6 @@ namespace Mecha.Controllers
                 customCursor = user.Style.CustomCursor,
                 description = user.Style.Description,
                 username = user.Style.Username,
-                effectUsername = user.Style.EffectUsername,
                 location = user.Style.Location
             });
         }
@@ -180,8 +178,8 @@ namespace Mecha.Controllers
                     styleId = Guid.NewGuid().ToString();
                     
                     var insertStyleSql = @"
-                        INSERT INTO style (style_id, profile_avatar, background, audio, AudioImage, AudioTitle, custom_cursor, description, username, effect_username, location)
-                        VALUES (@styleId, @profileAvatar, @background, @audio, @audioImage, @audioTitle, @customCursor, @description, @username, @effectUsername, @location)";
+                        INSERT INTO style (style_id, profile_avatar, background, audio, AudioImage, AudioTitle, custom_cursor, description, username, location)
+                        VALUES (@styleId, @profileAvatar, @background, @audio, @audioImage, @audioTitle, @customCursor, @description, @username, @location)";
                                         
                     using var insertCommand = _context.Database.GetDbConnection().CreateCommand();
                     insertCommand.CommandText = insertStyleSql;
@@ -194,7 +192,6 @@ namespace Mecha.Controllers
                     insertCommand.Parameters.Add(CreateParameter(insertCommand, "@customCursor", dto.CustomCursor));
                     insertCommand.Parameters.Add(CreateParameter(insertCommand, "@description", dto.Description));
                     insertCommand.Parameters.Add(CreateParameter(insertCommand, "@username", updatedUsername)); // Use updated username
-                    insertCommand.Parameters.Add(CreateParameter(insertCommand, "@effectUsername", dto.EffectUsername));
                     insertCommand.Parameters.Add(CreateParameter(insertCommand, "@location", dto.Location));
                     
                     await insertCommand.ExecuteNonQueryAsync();
@@ -248,11 +245,6 @@ namespace Mecha.Controllers
                         updateParts.Add("username = @username");
                         parameters.Add(CreateParameter(updateCommand, "@username", updatedUsername)); // Use updated username
                     }
-                    if (dto.EffectUsername != null)
-                    {
-                        updateParts.Add("effect_username = @effectUsername");
-                        parameters.Add(CreateParameter(updateCommand, "@effectUsername", dto.EffectUsername));
-                    }
                     if (dto.Location != null)
                     {
                         updateParts.Add("location = @location");
@@ -295,7 +287,7 @@ namespace Mecha.Controllers
 
                 // Get the updated style data
                 var getUpdatedStyleSql = @"
-                        SELECT style_id, profile_avatar, background, audio, AudioImage, AudioTitle, custom_cursor, description, username, effect_username, location
+                        SELECT style_id, profile_avatar, background, audio, AudioImage, AudioTitle, custom_cursor, description, username, location
                         FROM style WHERE style_id = @styleId";
 
                 
@@ -318,7 +310,6 @@ namespace Mecha.Controllers
                         customCursor = styleReader["custom_cursor"]?.ToString() ?? "",
                         description = styleReader["description"]?.ToString() ?? "",
                         username = styleReader["username"]?.ToString() ?? "",
-                        effectUsername = styleReader["effect_username"]?.ToString() ?? "",
                         location = styleReader["location"]?.ToString() ?? ""
                     };
                     
@@ -426,8 +417,8 @@ private async Task<IActionResult> UpdateProfileInternal(int id, UpdateProfileDto
             styleId = Guid.NewGuid().ToString();
 
             var insertStyleSql = @"
-                INSERT INTO style (style_id, profile_avatar, background, audio, AudioImage, AudioTitle, custom_cursor, description, username, effect_username, location)
-                VALUES (@styleId, @profileAvatar, @background, @audio, @audioImage, @audioTitle, @customCursor, @description, @username, @effectUsername, @location)";
+                INSERT INTO style (style_id, profile_avatar, background, audio, AudioImage, AudioTitle, custom_cursor, description, username, location)
+                VALUES (@styleId, @profileAvatar, @background, @audio, @audioImage, @audioTitle, @customCursor, @description, @username, @location)";
             using var insertCommand = _context.Database.GetDbConnection().CreateCommand();
             insertCommand.CommandText = insertStyleSql;
             insertCommand.Parameters.Add(CreateParameter(insertCommand, "@styleId", styleId));
@@ -439,7 +430,6 @@ private async Task<IActionResult> UpdateProfileInternal(int id, UpdateProfileDto
             insertCommand.Parameters.Add(CreateParameter(insertCommand, "@customCursor", dto.CustomCursor));
             insertCommand.Parameters.Add(CreateParameter(insertCommand, "@description", dto.Description));
             insertCommand.Parameters.Add(CreateParameter(insertCommand, "@username", updatedUsername));
-            insertCommand.Parameters.Add(CreateParameter(insertCommand, "@effectUsername", dto.EffectUsername));
             insertCommand.Parameters.Add(CreateParameter(insertCommand, "@location", dto.Location));
 
             await insertCommand.ExecuteNonQueryAsync();
@@ -491,11 +481,6 @@ private async Task<IActionResult> UpdateProfileInternal(int id, UpdateProfileDto
                 updateParts.Add("username = @username");
                 parameters.Add(CreateParameter(updateCommand, "@username", updatedUsername));
             }
-            if (dto.EffectUsername != null)
-            {
-                updateParts.Add("effect_username = @effectUsername");
-                parameters.Add(CreateParameter(updateCommand, "@effectUsername", dto.EffectUsername));
-            }
             if (dto.Location != null)
             {
                 updateParts.Add("location = @location");
@@ -528,7 +513,7 @@ private async Task<IActionResult> UpdateProfileInternal(int id, UpdateProfileDto
 
         // Return updated style
         var getUpdatedStyleSql = @"
-            SELECT style_id, profile_avatar, background, audio, AudioImage, AudioTitle, custom_cursor, description, username, effect_username, location
+            SELECT style_id, profile_avatar, background, audio, AudioImage, AudioTitle, custom_cursor, description, username, location
             FROM style WHERE style_id = @styleId";
 
         using var getStyleCommand = _context.Database.GetDbConnection().CreateCommand();
@@ -549,7 +534,6 @@ private async Task<IActionResult> UpdateProfileInternal(int id, UpdateProfileDto
                 customCursor = styleReader["custom_cursor"]?.ToString() ?? "",
                 description = styleReader["description"]?.ToString() ?? "",
                 username = styleReader["username"]?.ToString() ?? "",
-                effectUsername = styleReader["effect_username"]?.ToString() ?? "",
                 location = styleReader["location"]?.ToString() ?? ""
             };
 
@@ -650,8 +634,8 @@ private async Task<IActionResult> UpdateProfileInternal(int id, UpdateProfileDto
                     styleId = Guid.NewGuid().ToString();
                     
                     var insertStyleSql = @"
-                        INSERT INTO style (style_id, profile_avatar, background, audio, AudioImage, AudioTitle, custom_cursor, description, username, effect_username, location)
-                        VALUES (@styleId, @profileAvatar, @background, @audio, @audioImage, @audioTitle, @customCursor, @description, @username, @effectUsername, @location)";
+                        INSERT INTO style (style_id, profile_avatar, background, audio, AudioImage, AudioTitle, custom_cursor, description, username, location)
+                        VALUES (@styleId, @profileAvatar, @background, @audio, @audioImage, @audioTitle, @customCursor, @description, @username, @location)";
                                         
                     using var insertCommand = _context.Database.GetDbConnection().CreateCommand();
                     insertCommand.CommandText = insertStyleSql;
@@ -664,7 +648,6 @@ private async Task<IActionResult> UpdateProfileInternal(int id, UpdateProfileDto
                     insertCommand.Parameters.Add(CreateParameter(insertCommand, "@customCursor", dto.CustomCursor));
                     insertCommand.Parameters.Add(CreateParameter(insertCommand, "@description", dto.Description));
                     insertCommand.Parameters.Add(CreateParameter(insertCommand, "@username", updatedUsername)); // Use updated username
-                    insertCommand.Parameters.Add(CreateParameter(insertCommand, "@effectUsername", dto.EffectUsername));
                     insertCommand.Parameters.Add(CreateParameter(insertCommand, "@location", dto.Location));
                     
                     await insertCommand.ExecuteNonQueryAsync();
@@ -718,11 +701,6 @@ private async Task<IActionResult> UpdateProfileInternal(int id, UpdateProfileDto
                         updateParts.Add("username = @username");
                         parameters.Add(CreateParameter(updateCommand, "@username", updatedUsername)); // Use updated username
                     }
-                    if (dto.EffectUsername != null)
-                    {
-                        updateParts.Add("effect_username = @effectUsername");
-                        parameters.Add(CreateParameter(updateCommand, "@effectUsername", dto.EffectUsername));
-                    }
                     if (dto.Location != null)
                     {
                         updateParts.Add("location = @location");
@@ -765,7 +743,7 @@ private async Task<IActionResult> UpdateProfileInternal(int id, UpdateProfileDto
 
                 // Get the updated style data
                 var getUpdatedStyleSql = @"
-                        SELECT style_id, profile_avatar, background, audio, AudioImage, AudioTitle, custom_cursor, description, username, effect_username, location
+                        SELECT style_id, profile_avatar, background, audio, AudioImage, AudioTitle, custom_cursor, description, username, location
                         FROM style WHERE style_id = @styleId";
 
                 
@@ -788,7 +766,6 @@ private async Task<IActionResult> UpdateProfileInternal(int id, UpdateProfileDto
                         customCursor = styleReader["custom_cursor"]?.ToString() ?? "",
                         description = styleReader["description"]?.ToString() ?? "",
                         username = styleReader["username"]?.ToString() ?? "",
-                        effectUsername = styleReader["effect_username"]?.ToString() ?? "",
                         location = styleReader["location"]?.ToString() ?? ""
                     };
                     

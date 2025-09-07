@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "/Users/anphan/Desktop/mecha_backend/Mecha.csproj": {}
+    "/Users/anphan/Desktop/MechaBE/Mecha.csproj": {}
   },
   "projects": {
-    "/Users/anphan/Desktop/mecha_backend/Mecha.csproj": {
+    "/Users/anphan/Desktop/MechaBE/Mecha.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/Users/anphan/Desktop/mecha_backend/Mecha.csproj",
+        "projectUniqueName": "/Users/anphan/Desktop/MechaBE/Mecha.csproj",
         "projectName": "Mecha",
-        "projectPath": "/Users/anphan/Desktop/mecha_backend/Mecha.csproj",
+        "projectPath": "/Users/anphan/Desktop/MechaBE/Mecha.csproj",
         "packagesPath": "/Users/anphan/.nuget/packages/",
-        "outputPath": "/Users/anphan/Desktop/mecha_backend/obj/",
+        "outputPath": "/Users/anphan/Desktop/MechaBE/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "/Users/anphan/.nuget/NuGet/NuGet.Config"

@@ -35,7 +35,6 @@ public class UserStylesController : ControllerBase
             style.Audio,
             style.CustomCursor,
             style.Description,
-            style.EffectUsername,
             style.Location,
             style.AudioImage,
             style.AudioTitle

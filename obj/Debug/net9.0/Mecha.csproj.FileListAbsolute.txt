@@ -254,4 +254,3 @@
 /Users/anphan/Desktop/MechaBE/obj/Debug/net9.0/Mecha.pdb
 /Users/anphan/Desktop/MechaBE/obj/Debug/net9.0/Mecha.genruntimeconfig.cache
 /Users/anphan/Desktop/MechaBE/obj/Debug/net9.0/ref/Mecha.dll
-/Users/anphan/Desktop/mechaBE/bin/Debug/net9.0/Mecha.staticwebassets.runtime.json

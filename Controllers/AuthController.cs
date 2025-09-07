@@ -60,7 +60,6 @@ namespace Mecha.Controllers
                     { "audio", "" },
                     { "customCursor", "" },
                     { "description", "" },
-                    { "effectUsername", "" },
                     { "location", "" },
                     { "audioImage", "" },
                     { "audioTitle", "" }

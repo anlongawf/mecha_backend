@@ -36,10 +36,6 @@ namespace Mecha.Models
         [MaxLength(100)]
         public string? Username { get; set; }
 
-        [Column("effect_username")]
-        [MaxLength(255)]
-        public string? EffectUsername { get; set; }
-
         [Column("location")]
         [MaxLength(255)]
         public string? Location { get; set; }

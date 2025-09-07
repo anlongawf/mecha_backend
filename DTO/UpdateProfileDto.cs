@@ -8,7 +8,6 @@ namespace Mecha.DTO
         public string? CustomCursor { get; set; }
         public string? Description { get; set; }
         public string? Username { get; set; }
-        public string? EffectUsername { get; set; }
         public string? Location { get; set; }
         public string? AudioTitle { get; set; }
         public string? AudioImage { get; set; }

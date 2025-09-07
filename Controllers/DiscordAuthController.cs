@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Mecha.Data;
 using Mecha.Models;
 using Mecha.Services;
+using System.Text.Json;
 
 namespace Mecha.Controllers
 {
@@ -50,6 +51,26 @@ namespace Mecha.Controllers
 
             if (user == null)
             {
+                // Tạo StyleModel mặc định trước
+                var defaultStyleId = Guid.NewGuid().ToString();
+                var defaultStyleModel = new StyleModel
+                {
+                    StyleId = defaultStyleId,
+                    ProfileAvatar = null,
+                    Background = null,
+                    Audio = null,
+                    CustomCursor = null,
+                    Description = "Welcome to Mecha!",
+                    Username = username ?? $"discord_{discordId}",
+                    Location = null,
+                    AudioImage = null,
+                    AudioTitle = null,
+                    Social = null
+                };
+
+                _context.Styles.Add(defaultStyleModel);
+
+                // Tạo user mới với StyleId
                 user = new User
                 {
                     Username = username ?? $"discord_{discordId}",
@@ -57,9 +78,37 @@ namespace Mecha.Controllers
                     DiscordId = discordId,
                     PassWords = Guid.NewGuid().ToString(),
                     Roles = "user",
-                    Phone = ""
+                    Phone = "",
+                    StyleId = defaultStyleId
                 };
                 _context.Users.Add(user);
+                
+                // Lưu để có IdUser
+                await _context.SaveChangesAsync();
+
+                // Tạo JSON object mặc định cho UserStyle
+                var defaultStylesJson = JsonSerializer.Serialize(new
+                {
+                    theme = "default",
+                    color_scheme = "light",
+                    layout = "standard",
+                    custom_css = "",
+                    preferences = new
+                    {
+                        show_avatar = true,
+                        show_background = true,
+                        enable_animations = true
+                    }
+                });
+
+                // Tạo UserStyle với JSON data
+                var userStyle = new UserStyle
+                {
+                    IdUser = user.IdUser,
+                    Styles = defaultStylesJson
+                };
+
+                _context.UserStyles.Add(userStyle);
                 await _context.SaveChangesAsync();
             }
 
@@ -74,7 +123,8 @@ namespace Mecha.Controllers
                     username: '{user.Username}',
                     email: '{user.Email}',
                     phone: '{user.Phone}',
-                    roles: '{user.Roles}'
+                    roles: '{user.Roles}',
+                    styleId: '{user.StyleId}'
                 }}
             }}, '*');
             window.close();
@@ -82,8 +132,6 @@ namespace Mecha.Controllers
     ";
             return Content(script, "text/html");
         }
-
-
 
         [HttpPost("logout")]
         public async Task<IActionResult> Logout()

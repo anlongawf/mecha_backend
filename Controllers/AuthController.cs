@@ -22,57 +22,88 @@ namespace Mecha.Controllers
             _jwtService = jwtService;
         }
 
-        [HttpPost("register")]
-        public async Task<IActionResult> Register(RegisterRequest request)
+      [HttpPost("register")]
+public async Task<IActionResult> Register(RegisterRequest request)
+{
+    // Kiểm tra username hoặc email đã tồn tại
+    if (await _context.Users.AnyAsync(u => u.Username == request.Username || u.Email == request.Email))
+        return BadRequest("Username or Email already exists");
+
+    // Hash password
+    var hashedPassword = HashPassword(request.Password);
+
+    // Tạo StyleModel mặc định trước
+    var defaultStyleId = Guid.NewGuid().ToString();
+    var defaultStyleModel = new StyleModel
+    {
+        StyleId = defaultStyleId,
+        ProfileAvatar = null,
+        Background = null,
+        Audio = null,
+        CustomCursor = null,
+        Description = "Welcome to Mecha!",
+        Username = request.Username,
+        Location = null,
+        AudioImage = null,
+        AudioTitle = null,
+        Social = null
+    };
+
+    _context.Styles.Add(defaultStyleModel);
+
+    // Tạo user mới với StyleId
+    var user = new User
+    {
+        Username = request.Username,
+        Email = request.Email,
+        Phone = request.Phone,
+        PassWords = hashedPassword,
+        Roles = "user",
+        StyleId = defaultStyleId // Liên kết với StyleModel
+    };
+
+    _context.Users.Add(user);
+    await _context.SaveChangesAsync(); // Lưu để có IdUser
+
+    // Tạo JSON object mặc định cho UserStyle (giống với Discord auth)
+    var defaultStylesJson = JsonSerializer.Serialize(new
+    {
+        theme = "default",
+        color_scheme = "light",
+        layout = "standard",
+        custom_css = "",
+        background = "#ffffff",
+        profileAvatar = "",
+        audio = "",
+        customCursor = "",
+        description = "Welcome to Mecha!",
+        location = "",
+        audioImage = "",
+        audioTitle = "",
+        preferences = new
         {
-            // Kiểm tra username hoặc email đã tồn tại
-            if (await _context.Users.AnyAsync(u => u.Username == request.Username || u.Email == request.Email))
-                return BadRequest("Username or Email already exists");
-
-            // Hash password
-            var hashedPassword = HashPassword(request.Password);
-
-            // Tạo user mới
-            var user = new User
-            {
-                Username = request.Username,
-                Email = request.Email,
-                Phone = request.Phone,
-                PassWords = hashedPassword,
-                Roles = "user"
-                // Không cần gán StyleId nếu IdUser là auto-increment
-            };
-
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync();
-
-            // Lấy IdUser vừa tạo (auto-increment)
-            int newUserId = user.IdUser;
-
-            // Tạo record UserStyles mặc định
-            var userStyles = new UserStyle
-            {
-                IdUser = newUserId,
-                Styles = JsonSerializer.Serialize(new Dictionary<string, object>
-                {
-                    { "background", "#ffffff" },
-                    { "profileAvatar", "" },
-                    { "audio", "" },
-                    { "customCursor", "" },
-                    { "description", "" },
-                    { "location", "" },
-                    { "audioImage", "" },
-                    { "audioTitle", "" }
-                })
-            };
-
-            _context.UserStyles.Add(userStyles);
-            await _context.SaveChangesAsync();
-
-            return Ok(new { message = "User registered successfully", userId = newUserId });
+            show_avatar = true,
+            show_background = true,
+            enable_animations = true
         }
+    });
 
+    // Tạo UserStyle với JSON data
+    var userStyle = new UserStyle
+    {
+        IdUser = user.IdUser,
+        Styles = defaultStylesJson
+    };
 
+    _context.UserStyles.Add(userStyle);
+    await _context.SaveChangesAsync();
+
+    return Ok(new { 
+        message = "User registered successfully", 
+        userId = user.IdUser,
+        styleId = defaultStyleId
+    });
+}
         [HttpPost("login")]
         public async Task<IActionResult> Login(LoginRequest request)
         {

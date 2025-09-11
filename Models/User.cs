@@ -9,6 +9,7 @@ namespace Mecha.Models
     {
         [Key]
         public int IdUser { get; set; }
+        public int Premium { get; }
 
         [MaxLength(255)]
         public string? Username { get; set; } // Changed to nullable

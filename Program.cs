@@ -1,6 +1,9 @@
+// Program.cs - Updated với Profile Services
+
 using Microsoft.EntityFrameworkCore;
 using Mecha.Data;
 using Mecha.Services;
+using Mecha.Helpers;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
@@ -16,7 +19,13 @@ builder.Services.AddDbContext<AppDbContext>(options =>
         new MySqlServerVersion(new Version(10, 5, 0)) // version MariaDB
     ));
 
+// Register existing services
 builder.Services.AddScoped<JwtService>();
+
+// Register new Profile services
+builder.Services.AddScoped<DatabaseHelper>();
+builder.Services.AddScoped<StyleService>();
+builder.Services.AddScoped<IProfileService, ProfileService>();
 
 builder.Services.AddControllers();
 
@@ -78,8 +87,6 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-
-
 
 // Enhanced CORS configuration for authentication
 builder.Services.AddCors(options =>

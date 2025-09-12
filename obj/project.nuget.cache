@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "Y9O61xjeusk=",
+  "dgSpecHash": "7NrF5g8jSZ4=",
   "success": true,
-  "projectFilePath": "/Users/anphan/Desktop/MechaBE/Mecha.csproj",
+  "projectFilePath": "/Users/anphan/Desktop/mecha_backend/Mecha.csproj",
   "expectedPackageFiles": [
     "/Users/anphan/.nuget/packages/aspnet.security.oauth.discord/9.4.0/aspnet.security.oauth.discord.9.4.0.nupkg.sha512",
     "/Users/anphan/.nuget/packages/bouncycastle.cryptography/2.7.0-beta.98/bouncycastle.cryptography.2.7.0-beta.98.nupkg.sha512",
@@ -62,6 +62,7 @@
     "/Users/anphan/.nuget/packages/system.linq.async/6.0.1/system.linq.async.6.0.1.nupkg.sha512",
     "/Users/anphan/.nuget/packages/system.reactive/6.0.1/system.reactive.6.0.1.nupkg.sha512",
     "/Users/anphan/.nuget/packages/system.text.encodings.web/8.0.0/system.text.encodings.web.8.0.0.nupkg.sha512",
+    "/Users/anphan/.nuget/packages/system.text.json/9.0.9/system.text.json.9.0.9.nupkg.sha512",
     "/Users/anphan/.nuget/packages/system.valuetuple/4.5.0/system.valuetuple.4.5.0.nupkg.sha512"
   ],
   "logs": []

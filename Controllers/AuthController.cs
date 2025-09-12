@@ -22,92 +22,95 @@ namespace Mecha.Controllers
             _jwtService = jwtService;
         }
 
-      [HttpPost("register")]
-public async Task<IActionResult> Register(RegisterRequest request)
-{
-    // Kiểm tra username hoặc email đã tồn tại
-    if (await _context.Users.AnyAsync(u => u.Username == request.Username || u.Email == request.Email))
-        return BadRequest("Username or Email already exists");
-
-    // Hash password
-    var hashedPassword = HashPassword(request.Password);
-
-    // Tạo StyleModel mặc định trước
-    var defaultStyleId = Guid.NewGuid().ToString();
-    var defaultStyleModel = new StyleModel
-    {
-        StyleId = defaultStyleId,
-        ProfileAvatar = null,
-        Background = null,
-        Audio = null,
-        CustomCursor = null,
-        Description = "Welcome to Mecha!",
-        Username = request.Username,
-        Location = null,
-        AudioImage = null,
-        AudioTitle = null,
-        Social = null
-    };
-
-    _context.Styles.Add(defaultStyleModel);
-
-    // Tạo user mới với StyleId
-    var user = new User
-    {
-        Username = request.Username,
-        Email = request.Email,
-        Phone = request.Phone,
-        PassWords = hashedPassword,
-        Roles = "user",
-        StyleId = defaultStyleId // Liên kết với StyleModel
-    };
-
-    _context.Users.Add(user);
-    await _context.SaveChangesAsync(); // Lưu để có IdUser
-
-    // Tạo JSON object mặc định cho UserStyle (giống với Discord auth)
-    var defaultStylesJson = JsonSerializer.Serialize(new
-    {
-        theme = "default",
-        color_scheme = "light",
-        layout = "standard",
-        custom_css = "",
-        background = "#ffffff",
-        profileAvatar = "",
-        audio = "",
-        customCursor = "",
-        description = "Welcome to Mecha!",
-        location = "",
-        audioImage = "",
-        audioTitle = "",
-        preferences = new
+        [HttpPost("register")]
+        public async Task<IActionResult> Register(RegisterRequest request)
         {
-            show_avatar = true,
-            show_background = true,
-            enable_animations = true
+            // Kiểm tra username hoặc email đã tồn tại
+            if (await _context.Users.AnyAsync(u => u.Username == request.Username || u.Email == request.Email))
+                return BadRequest("Username or Email already exists");
+
+            // Hash password
+            var hashedPassword = HashPassword(request.Password);
+
+            // Tạo StyleModel mặc định trước
+            var defaultStyleId = Guid.NewGuid().ToString();
+            var defaultStyleModel = new StyleModel
+            {
+                StyleId = defaultStyleId,
+                ProfileAvatar = null,
+                Background = null,
+                Audio = null,
+                CustomCursor = null,
+                Description = "Welcome to Mecha!",
+                Username = request.Username,
+                Location = null,
+                AudioImage = null,
+                AudioTitle = null,
+                Social = null
+            };
+
+            _context.Styles.Add(defaultStyleModel);
+
+            // Tạo user mới với StyleId và Premium = 0 (non-premium)
+            var user = new User
+            {
+                Username = request.Username,
+                Email = request.Email,
+                Phone = request.Phone,
+                PassWords = hashedPassword,
+                Roles = "user",
+                StyleId = defaultStyleId,
+                Premium = false
+            };
+
+            _context.Users.Add(user);
+            await _context.SaveChangesAsync(); // Lưu để có IdUser
+
+            // Tạo JSON object mặc định cho UserStyle (giống với Discord auth)
+            var defaultStylesJson = JsonSerializer.Serialize(new
+            {
+                theme = "default",
+                color_scheme = "light",
+                layout = "standard",
+                custom_css = "",
+                background = "#ffffff",
+                profileAvatar = "",
+                audio = "",
+                customCursor = "",
+                description = "Welcome to Mecha!",
+                location = "",
+                audioImage = "",
+                audioTitle = "",
+                preferences = new
+                {
+                    show_avatar = true,
+                    show_background = true,
+                    enable_animations = true
+                }
+            });
+
+            // Tạo UserStyle với JSON data
+            var userStyle = new UserStyle
+            {
+                IdUser = user.IdUser,
+                Styles = defaultStylesJson
+            };
+
+            _context.UserStyles.Add(userStyle);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { 
+                message = "User registered successfully", 
+                userId = user.IdUser,
+                styleId = defaultStyleId
+            });
         }
-    });
 
-    // Tạo UserStyle với JSON data
-    var userStyle = new UserStyle
-    {
-        IdUser = user.IdUser,
-        Styles = defaultStylesJson
-    };
-
-    _context.UserStyles.Add(userStyle);
-    await _context.SaveChangesAsync();
-
-    return Ok(new { 
-        message = "User registered successfully", 
-        userId = user.IdUser,
-        styleId = defaultStyleId
-    });
-}
         [HttpPost("login")]
         public async Task<IActionResult> Login(LoginRequest request)
         {
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == request.Username);
+            
             if (user == null || !VerifyPassword(request.Password, user.PassWords))
                 return Unauthorized("Invalid username or password");
 
@@ -116,7 +119,16 @@ public async Task<IActionResult> Register(RegisterRequest request)
             return Ok(new
             {
                 token,
-                user = new { user.IdUser, user.Username, user.Email, user.Phone, user.Roles }
+                user = new 
+                { 
+                    user.IdUser, 
+                    user.Username, 
+                    user.Email, 
+                    user.Phone, 
+                    user.Roles,
+                    user.StyleId,
+                    user.Premium 
+                }
             });
         }
 
@@ -131,5 +143,20 @@ public async Task<IActionResult> Register(RegisterRequest request)
         {
             return HashPassword(password) == storedHash;
         }
+    }
+
+    // Request models
+    public class RegisterRequest
+    {
+        public string Username { get; set; } = "";
+        public string Email { get; set; } = "";
+        public string Phone { get; set; } = "";
+        public string Password { get; set; } = "";
+    }
+
+    public class LoginRequest
+    {
+        public string Username { get; set; } = "";
+        public string Password { get; set; } = "";
     }
 }

@@ -17,7 +17,8 @@
           "Microsoft.EntityFrameworkCore": "9.0.0",
           "Pomelo.EntityFrameworkCore.MySql": "9.0.0-rc.1.efcore.9.0.0",
           "Swashbuckle.AspNetCore": "9.0.3",
-          "System.IdentityModel.Tokens.Jwt": "8.13.1"
+          "System.IdentityModel.Tokens.Jwt": "8.13.1",
+          "System.Text.Json": "9.0.9"
         },
         "runtime": {
           "Mecha.dll": {}
@@ -494,6 +495,14 @@
         }
       },
       "System.Text.Encodings.Web/8.0.0": {},
+      "System.Text.Json/9.0.9": {
+        "runtime": {
+          "lib/net9.0/System.Text.Json.dll": {
+            "assemblyVersion": "9.0.0.0",
+            "fileVersion": "9.0.925.41916"
+          }
+        }
+      },
       "System.ValueTuple/4.5.0": {}
     }
   },
@@ -908,6 +917,13 @@
       "sha512": "sha512-yev/k9GHAEGx2Rg3/tU6MQh4HGBXJs70y7j1LaM1i/ER9po+6nnQ6RRqTJn1E7Xu0fbIFK80Nh5EoODxrbxwBQ==",
       "path": "system.text.encodings.web/8.0.0",
       "hashPath": "system.text.encodings.web.8.0.0.nupkg.sha512"
+    },
+    "System.Text.Json/9.0.9": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-NEnpppwq67fRz/OvQRxsEMgetDJsxlxpEsAFO/4PZYbAyAMd4Ol6KS7phc8uDoKPsnbdzRLKobpX303uQwCqdg==",
+      "path": "system.text.json/9.0.9",
+      "hashPath": "system.text.json.9.0.9.nupkg.sha512"
     },
     "System.ValueTuple/4.5.0": {
       "type": "package",

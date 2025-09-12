@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Mecha.Data;
 
 namespace Mecha.Controllers
 {
@@ -7,21 +9,37 @@ namespace Mecha.Controllers
     public class FileUploadController : ControllerBase
     {
         private readonly IWebHostEnvironment _environment;
+        private readonly AppDbContext _context;
         private readonly long _maxImageAudioFileSize = 10 * 1024 * 1024; // 10MB cho image và audio
         private readonly long _maxVideoFileSize = 50 * 1024 * 1024; // 50MB cho video
 
-        public FileUploadController(IWebHostEnvironment environment)
+        public FileUploadController(IWebHostEnvironment environment, AppDbContext context)
         {
             _environment = environment;
+            _context = context;
         }
         
         [HttpPost("upload")]
-        public async Task<IActionResult> UploadFile(IFormFile file, [FromQuery] string type = "image")
+        public async Task<IActionResult> UploadFile(IFormFile file, [FromQuery] string type = "image", [FromQuery] int? userId = null)
         {
             try
             {
                 if (file == null || file.Length == 0)
                     return BadRequest(new { message = "No file uploaded" });
+
+                // Kiểm tra premium status nếu upload background video
+                if (type.ToLower() == "background_video")
+                {
+                    if (!userId.HasValue)
+                        return BadRequest(new { message = "User ID is required for video upload" });
+                    
+                    Console.WriteLine($"Checking premium for user: {userId.Value}, type: {type}");
+
+                    var isPremium = await CheckUserPremiumStatusAsync(userId.Value);
+                    Console.WriteLine($"Premium check result: {isPremium}");
+                    if (!isPremium)
+                        return StatusCode(403, new { message = "Premium subscription required for video background upload" });
+                }
 
                 // Kiểm tra kích thước file dựa trên loại
                 var maxSize = GetMaxFileSize(type);
@@ -68,7 +86,7 @@ namespace Mecha.Controllers
         }
 
         [HttpDelete("delete")]
-        public IActionResult DeleteFile([FromBody] DeleteFileRequest request)
+        public async Task<IActionResult> DeleteFile([FromBody] DeleteFileRequest request)
         {
             try
             {
@@ -93,9 +111,55 @@ namespace Mecha.Controllers
             }
         }
 
+        [HttpGet("check-premium/{userId}")]
+        public async Task<IActionResult> CheckPremiumStatus(int userId)
+        {
+            try
+            {
+                var isPremium = await CheckUserPremiumStatusAsync(userId);
+                return Ok(new { isPremium = isPremium });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Error checking premium status", error = ex.Message });
+            }
+        }
+
         public class DeleteFileRequest
         {
             public string Path { get; set; } = "";
+        }
+
+        private async Task<bool> CheckUserPremiumStatusAsync(int userId)
+        {
+            try
+            {
+                var user = await _context.Users.FindAsync(userId);
+                if (user == null) 
+                {
+                    Console.WriteLine($"User with ID {userId} not found");
+                    return false;
+                }
+        
+                // Debug info - log giá trị Premium
+                Console.WriteLine($"User ID: {userId}, Premium value: {user.Premium}, Type: {user.Premium.GetType()}");
+        
+                // Nếu dùng bool trong Model
+                bool isPremium = user.Premium;
+        
+                // Nếu dùng byte trong Model
+                // bool isPremium = user.Premium == 1;
+        
+                Console.WriteLine($"IsPremium result: {isPremium}");
+        
+                return isPremium;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error checking premium status: {ex.Message}");
+                Console.WriteLine($"Stack trace: {ex.StackTrace}");
+                return false;
+            }
         }
 
         private long GetMaxFileSize(string type)
@@ -124,4 +188,5 @@ namespace Mecha.Controllers
             };
         }
     }
+    
 }

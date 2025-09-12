@@ -79,7 +79,8 @@ namespace Mecha.Controllers
                     PassWords = Guid.NewGuid().ToString(),
                     Roles = "user",
                     Phone = "",
-                    StyleId = defaultStyleId
+                    StyleId = defaultStyleId,
+                    Premium = false
                 };
                 _context.Users.Add(user);
                 

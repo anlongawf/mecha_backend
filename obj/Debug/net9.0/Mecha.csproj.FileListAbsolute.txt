@@ -255,3 +255,4 @@
 /Users/anphan/Desktop/MechaBE/obj/Debug/net9.0/Mecha.genruntimeconfig.cache
 /Users/anphan/Desktop/MechaBE/obj/Debug/net9.0/ref/Mecha.dll
 /Users/anphan/Desktop/MechaBE/bin/Debug/net9.0/Mecha.staticwebassets.runtime.json
+/Users/anphan/Desktop/mecha_backend/bin/Debug/net9.0/System.Text.Json.dll

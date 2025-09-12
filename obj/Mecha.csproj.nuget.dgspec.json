@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "/Users/anphan/Desktop/MechaBE/Mecha.csproj": {}
+    "/Users/anphan/Desktop/mecha_backend/Mecha.csproj": {}
   },
   "projects": {
-    "/Users/anphan/Desktop/MechaBE/Mecha.csproj": {
+    "/Users/anphan/Desktop/mecha_backend/Mecha.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/Users/anphan/Desktop/MechaBE/Mecha.csproj",
+        "projectUniqueName": "/Users/anphan/Desktop/mecha_backend/Mecha.csproj",
         "projectName": "Mecha",
-        "projectPath": "/Users/anphan/Desktop/MechaBE/Mecha.csproj",
+        "projectPath": "/Users/anphan/Desktop/mecha_backend/Mecha.csproj",
         "packagesPath": "/Users/anphan/.nuget/packages/",
-        "outputPath": "/Users/anphan/Desktop/MechaBE/obj/",
+        "outputPath": "/Users/anphan/Desktop/mecha_backend/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "/Users/anphan/.nuget/NuGet/NuGet.Config"
@@ -83,6 +83,10 @@
             "System.IdentityModel.Tokens.Jwt": {
               "target": "Package",
               "version": "[8.13.1, )"
+            },
+            "System.Text.Json": {
+              "target": "Package",
+              "version": "[9.0.9, )"
             }
           },
           "imports": [

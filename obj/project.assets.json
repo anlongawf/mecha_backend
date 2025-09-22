@@ -2679,11 +2679,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "/Users/anphan/Desktop/mecha_backend/Mecha.csproj",
+      "projectUniqueName": "/Users/anphan/Desktop/MechaBackEnd/Mecha.csproj",
       "projectName": "Mecha",
-      "projectPath": "/Users/anphan/Desktop/mecha_backend/Mecha.csproj",
+      "projectPath": "/Users/anphan/Desktop/MechaBackEnd/Mecha.csproj",
       "packagesPath": "/Users/anphan/.nuget/packages/",
-      "outputPath": "/Users/anphan/Desktop/mecha_backend/obj/",
+      "outputPath": "/Users/anphan/Desktop/MechaBackEnd/obj/",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "/Users/anphan/.nuget/NuGet/NuGet.Config"

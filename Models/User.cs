@@ -21,7 +21,7 @@ namespace Mecha.Models
         [MaxLength(10)]
         public string? Phone { get; set; } // Changed to nullable
 
-        public string? PassWords { get; set; } // Changed to nullable
+        public string? password { get; set; } // Changed to nullable
 
         [MaxLength(50)]
         public string? Roles { get; set; } = "user";
@@ -36,5 +36,8 @@ namespace Mecha.Models
         public string? StyleId { get; set; }
 
         public StyleModel? Style { get; set; }
+        
+        [Column("IsVerified", TypeName = "TINYINT(1)")]
+        public bool IsVerified { get; set; } = false;
     }
 }

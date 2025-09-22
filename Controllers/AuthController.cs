@@ -57,10 +57,11 @@ namespace Mecha.Controllers
                 Username = request.Username,
                 Email = request.Email,
                 Phone = request.Phone,
-                PassWords = hashedPassword,
+                password = hashedPassword,
                 Roles = "user",
                 StyleId = defaultStyleId,
-                Premium = false
+                Premium = false,
+                IsVerified = false
             };
 
             _context.Users.Add(user);
@@ -111,7 +112,7 @@ namespace Mecha.Controllers
         {
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == request.Username);
             
-            if (user == null || !VerifyPassword(request.Password, user.PassWords))
+            if (user == null || !VerifyPassword(request.Password, user.password))
                 return Unauthorized("Invalid username or password");
 
             var token = _jwtService.GenerateToken(user.Username, user.Roles);

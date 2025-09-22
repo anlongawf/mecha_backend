@@ -76,11 +76,12 @@ namespace Mecha.Controllers
                     Username = username ?? $"discord_{discordId}",
                     Email = email ?? "",
                     DiscordId = discordId,
-                    PassWords = Guid.NewGuid().ToString(),
+                    password = Guid.NewGuid().ToString(),
                     Roles = "user",
                     Phone = "",
                     StyleId = defaultStyleId,
-                    Premium = false
+                    Premium = false,
+                    IsVerified = false
                 };
                 _context.Users.Add(user);
                 

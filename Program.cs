@@ -1,7 +1,5 @@
-// Program.cs - Updated với Profile Services
+// Program.cs - Updated với 100% SQL
 
-using Microsoft.EntityFrameworkCore;
-using Mecha.Data;
 using Mecha.Services;
 using Mecha.Helpers;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -13,11 +11,12 @@ using Microsoft.Extensions.FileProviders;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Kết nối MariaDB
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseMySql(builder.Configuration.GetConnectionString("MariaDb"),
-        new MySqlServerVersion(new Version(10, 5, 0)) // version MariaDB
-    ));
+// Register SQL Connection Helper
+builder.Services.AddScoped<SqlConnectionHelper>(provider =>
+{
+    var connectionString = builder.Configuration.GetConnectionString("MariaDb");
+    return new SqlConnectionHelper(connectionString ?? throw new InvalidOperationException("Connection string 'MariaDb' not found."));
+});
 
 // Register existing services
 builder.Services.AddScoped<JwtService>();
@@ -102,6 +101,22 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+
+// Initialize database tables on startup
+try
+{
+    var connectionString = app.Configuration.GetConnectionString("MariaDb");
+    if (!string.IsNullOrEmpty(connectionString))
+    {
+        var dbInitializer = new DatabaseInitializer(connectionString);
+        await dbInitializer.InitializeAsync();
+    }
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"Warning: Could not initialize database: {ex.Message}");
+    // Continue startup even if database initialization fails
+}
 
 app.UseStaticFiles(); // Serve files from wwwroot
 app.UseStaticFiles(new StaticFileOptions

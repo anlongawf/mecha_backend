@@ -1,107 +1,165 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Mecha.Data;
-using Mecha.Models;
 using Mecha.DTO;
+using Mecha.Helpers;
 using System.Text.Json;
-[ApiController]
-[Route("api/[controller]")]
-public class UserStylesController : ControllerBase
+using MySql.Data.MySqlClient;
+
+namespace Mecha.Controllers
 {
-    private readonly AppDbContext _context;
-
-    public UserStylesController(AppDbContext context)
+    [ApiController]
+    [Route("api/[controller]")]
+    public class UserStylesController : ControllerBase
     {
-        _context = context;
-    }
-    
-    // GET: api/UserStyles/username/{username}
-    [HttpGet("username/{username}")]
-    public async Task<IActionResult> GetUserStyleByUsername(string username)
-    {
-        // Tìm style dựa trên username
-        var style = await _context.Styles
-            .FirstOrDefaultAsync(s => s.Username == username);
+        private readonly SqlConnectionHelper _sqlHelper;
 
-        if (style == null)
-            return NotFound(new { message = "Style not found for this user" });
-
-        // Trả về các thuộc tính style
-        var dto = new
+        public UserStylesController(SqlConnectionHelper sqlHelper)
         {
-            style.StyleId,
-            style.ProfileAvatar,
-            style.Background,
-            style.Audio,
-            style.CustomCursor,
-            style.Description,
-            style.Location,
-            style.AudioImage,
-            style.AudioTitle
-        };
-
-        return Ok(dto);
-    }
-
-
-    // GET: api/UserStyles/19
-    [HttpGet("{idUser}")]
-    public async Task<IActionResult> GetUserStyle(int idUser)
-    {
-        var style = await _context.UserStyles.FirstOrDefaultAsync(x => x.IdUser == idUser);
-        if (style == null)
-            return NotFound();
-
-        var dto = new UserStyleDto
+            _sqlHelper = sqlHelper;
+        }
+        
+        // GET: api/UserStyles/username/{username}
+        [HttpGet("username/{username}")]
+        public async Task<IActionResult> GetUserStyleByUsername(string username)
         {
-            IdUser = style.IdUser,
-            Styles = JsonSerializer.Deserialize<Dictionary<string, object>>(style.Styles)
-        };
+            try
+            {
+                var sql = @"
+                    SELECT style_id, profile_avatar, background, audio, custom_cursor, description, location, AudioImage, AudioTitle
+                    FROM style
+                    WHERE username = @username";
 
-        return Ok(dto);
-    }
+                using var reader = await _sqlHelper.ExecuteReaderAsync(sql,
+                    _sqlHelper.CreateParameter("@username", username));
 
-    // POST: api/UserStyles
-    [HttpPost]
-    public async Task<IActionResult> CreateUserStyle([FromBody] UserStyleDto dto)
-    {
-        if (dto == null) return BadRequest("Invalid body");
+                if (!await reader.ReadAsync())
+                    return NotFound(new { message = "Style not found for this user" });
 
-        var entity = new UserStyle
+                var dto = new
+                {
+                    StyleId = reader["style_id"]?.ToString(),
+                    ProfileAvatar = reader["profile_avatar"] == DBNull.Value ? null : reader["profile_avatar"]?.ToString(),
+                    Background = reader["background"] == DBNull.Value ? null : reader["background"]?.ToString(),
+                    Audio = reader["audio"] == DBNull.Value ? null : reader["audio"]?.ToString(),
+                    CustomCursor = reader["custom_cursor"] == DBNull.Value ? null : reader["custom_cursor"]?.ToString(),
+                    Description = reader["description"] == DBNull.Value ? null : reader["description"]?.ToString(),
+                    Location = reader["location"] == DBNull.Value ? null : reader["location"]?.ToString(),
+                    AudioImage = reader["AudioImage"] == DBNull.Value ? null : reader["AudioImage"]?.ToString(),
+                    AudioTitle = reader["AudioTitle"] == DBNull.Value ? null : reader["AudioTitle"]?.ToString()
+                };
+
+                return Ok(dto);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Error retrieving style", error = ex.Message });
+            }
+        }
+
+        // GET: api/UserStyles/19
+        [HttpGet("{idUser}")]
+        public async Task<IActionResult> GetUserStyle(int idUser)
         {
-            IdUser = dto.IdUser,
-            Styles = JsonSerializer.Serialize(dto.Styles)
-        };
+            try
+            {
+                var sql = "SELECT idUser, styles FROM user_styles WHERE idUser = @idUser";
+                using var reader = await _sqlHelper.ExecuteReaderAsync(sql,
+                    _sqlHelper.CreateParameter("@idUser", idUser));
 
-        _context.UserStyles.Add(entity);
-        await _context.SaveChangesAsync();
+                if (!await reader.ReadAsync())
+                    return NotFound();
 
-        return Ok(new { entity.StyleId, entity.IdUser, dto.Styles });
-    }
+                var stylesJson = reader["styles"]?.ToString();
+                var styles = JsonSerializer.Deserialize<Dictionary<string, object>>(stylesJson);
 
-    // PUT: api/UserStyles/19
-    [HttpPut("{idUser}")]
-    public async Task<IActionResult> UpdateUserStyle(int idUser, [FromBody] UserStyleDto dto)
-    {
-        var style = await _context.UserStyles.FirstOrDefaultAsync(x => x.IdUser == idUser);
-        if (style == null) return NotFound();
+                var dto = new UserStyleDto
+                {
+                    IdUser = Convert.ToInt32(reader["idUser"]),
+                    Styles = styles ?? new Dictionary<string, object>()
+                };
 
-        style.Styles = JsonSerializer.Serialize(dto.Styles);
-        await _context.SaveChangesAsync();
+                return Ok(dto);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Error retrieving user style", error = ex.Message });
+            }
+        }
 
-        return Ok(new { style.IdUser, dto.Styles });
-    }
+        // POST: api/UserStyles
+        [HttpPost]
+        public async Task<IActionResult> CreateUserStyle([FromBody] UserStyleDto dto)
+        {
+            try
+            {
+                if (dto == null) return BadRequest("Invalid body");
 
-    // DELETE: api/UserStyles/19
-    [HttpDelete("{idUser}")]
-    public async Task<IActionResult> DeleteUserStyle(int idUser)
-    {
-        var style = await _context.UserStyles.FirstOrDefaultAsync(x => x.IdUser == idUser);
-        if (style == null) return NotFound();
+                var stylesJson = JsonSerializer.Serialize(dto.Styles);
+                var sql = "INSERT INTO user_styles (idUser, styles) VALUES (@idUser, @styles)";
 
-        _context.UserStyles.Remove(style);
-        await _context.SaveChangesAsync();
+                await _sqlHelper.ExecuteNonQueryAsync(sql,
+                    _sqlHelper.CreateParameter("@idUser", dto.IdUser),
+                    _sqlHelper.CreateParameter("@styles", stylesJson));
 
-        return Ok(new { message = "Deleted successfully" });
+                return Ok(new { idUser = dto.IdUser, styles = dto.Styles });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Error creating user style", error = ex.Message });
+            }
+        }
+
+        // PUT: api/UserStyles/19
+        [HttpPut("{idUser}")]
+        public async Task<IActionResult> UpdateUserStyle(int idUser, [FromBody] UserStyleDto dto)
+        {
+            try
+            {
+                // Check if exists
+                var checkSql = "SELECT COUNT(*) FROM user_styles WHERE idUser = @idUser";
+                var exists = Convert.ToInt32(await _sqlHelper.ExecuteScalarAsync(checkSql,
+                    _sqlHelper.CreateParameter("@idUser", idUser))) > 0;
+
+                if (!exists)
+                    return NotFound();
+
+                var stylesJson = JsonSerializer.Serialize(dto.Styles);
+                var sql = "UPDATE user_styles SET styles = @styles WHERE idUser = @idUser";
+
+                await _sqlHelper.ExecuteNonQueryAsync(sql,
+                    _sqlHelper.CreateParameter("@styles", stylesJson),
+                    _sqlHelper.CreateParameter("@idUser", idUser));
+
+                return Ok(new { idUser = idUser, styles = dto.Styles });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Error updating user style", error = ex.Message });
+            }
+        }
+
+        // DELETE: api/UserStyles/19
+        [HttpDelete("{idUser}")]
+        public async Task<IActionResult> DeleteUserStyle(int idUser)
+        {
+            try
+            {
+                var checkSql = "SELECT COUNT(*) FROM user_styles WHERE idUser = @idUser";
+                var exists = Convert.ToInt32(await _sqlHelper.ExecuteScalarAsync(checkSql,
+                    _sqlHelper.CreateParameter("@idUser", idUser))) > 0;
+
+                if (!exists)
+                    return NotFound();
+
+                var sql = "DELETE FROM user_styles WHERE idUser = @idUser";
+                await _sqlHelper.ExecuteNonQueryAsync(sql,
+                    _sqlHelper.CreateParameter("@idUser", idUser));
+
+                return Ok(new { message = "Deleted successfully" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Error deleting user style", error = ex.Message });
+            }
+        }
     }
 }

@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Mecha.Data;
+using Mecha.Helpers;
+using MySql.Data.MySqlClient;
 
 namespace Mecha.Controllers
 {
@@ -9,14 +9,14 @@ namespace Mecha.Controllers
     public class FileUploadController : ControllerBase
     {
         private readonly IWebHostEnvironment _environment;
-        private readonly AppDbContext _context;
+        private readonly SqlConnectionHelper _sqlHelper;
         private readonly long _maxImageAudioFileSize = 10 * 1024 * 1024; // 10MB cho image và audio
         private readonly long _maxVideoFileSize = 50 * 1024 * 1024; // 50MB cho video
 
-        public FileUploadController(IWebHostEnvironment environment, AppDbContext context)
+        public FileUploadController(IWebHostEnvironment environment, SqlConnectionHelper sqlHelper)
         {
             _environment = environment;
-            _context = context;
+            _sqlHelper = sqlHelper;
         }
         
         [HttpPost("upload")]
@@ -134,24 +134,18 @@ namespace Mecha.Controllers
         {
             try
             {
-                var user = await _context.Users.FindAsync(userId);
-                if (user == null) 
+                var sql = "SELECT Premium FROM users WHERE IdUser = @userId";
+                var result = await _sqlHelper.ExecuteScalarAsync(sql,
+                    _sqlHelper.CreateParameter("@userId", userId));
+
+                if (result == null || result == DBNull.Value)
                 {
                     Console.WriteLine($"User with ID {userId} not found");
                     return false;
                 }
-        
-                // Debug info - log giá trị Premium
-                Console.WriteLine($"User ID: {userId}, Premium value: {user.Premium}, Type: {user.Premium.GetType()}");
-        
-                // Nếu dùng bool trong Model
-                bool isPremium = user.Premium;
-        
-                // Nếu dùng byte trong Model
-                // bool isPremium = user.Premium == 1;
-        
-                Console.WriteLine($"IsPremium result: {isPremium}");
-        
+
+                bool isPremium = Convert.ToBoolean(result);
+                Console.WriteLine($"User ID: {userId}, Premium value: {isPremium}");
                 return isPremium;
             }
             catch (Exception ex)

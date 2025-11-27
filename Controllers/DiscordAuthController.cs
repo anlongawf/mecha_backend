@@ -3,11 +3,10 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using AspNet.Security.OAuth.Discord;
 using System.Security.Claims;
-using Microsoft.EntityFrameworkCore;
-using Mecha.Data;
-using Mecha.Models;
+using Mecha.Helpers;
 using Mecha.Services;
 using System.Text.Json;
+using MySql.Data.MySqlClient;
 
 namespace Mecha.Controllers
 {
@@ -15,12 +14,12 @@ namespace Mecha.Controllers
     [ApiController]
     public class DiscordAuthController : ControllerBase
     {
-        private readonly AppDbContext _context;
+        private readonly SqlConnectionHelper _sqlHelper;
         private readonly JwtService _jwtService;
 
-        public DiscordAuthController(AppDbContext context, JwtService jwtService)
+        public DiscordAuthController(SqlConnectionHelper sqlHelper, JwtService jwtService)
         {
-            _context = context;
+            _sqlHelper = sqlHelper;
             _jwtService = jwtService;
         }
 
@@ -47,92 +46,121 @@ namespace Mecha.Controllers
             var username = claims.FirstOrDefault(c => c.Type == ClaimTypes.Name)?.Value;
             var email = claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value;
 
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.DiscordId == discordId);
-
-            if (user == null)
+            try
             {
-                // Tạo StyleModel mặc định trước
-                var defaultStyleId = Guid.NewGuid().ToString();
-                var defaultStyleModel = new StyleModel
-                {
-                    StyleId = defaultStyleId,
-                    ProfileAvatar = null,
-                    Background = null,
-                    Audio = null,
-                    CustomCursor = null,
-                    Description = "Welcome to Mecha!",
-                    Username = username ?? $"discord_{discordId}",
-                    Location = null,
-                    AudioImage = null,
-                    AudioTitle = null,
-                    Social = null
-                };
+                // Check if user exists
+                var checkUserSql = "SELECT IdUser, Username, Email, Phone, Roles, StyleId FROM users WHERE DiscordId = @discordId";
+                using var userReader = await _sqlHelper.ExecuteReaderAsync(checkUserSql,
+                    _sqlHelper.CreateParameter("@discordId", discordId));
 
-                _context.Styles.Add(defaultStyleModel);
+                int userId;
+                string userUsername;
+                string? userEmail;
+                string? userPhone;
+                string userRoles;
+                string? styleId;
 
-                // Tạo user mới với StyleId
-                user = new User
+                if (await userReader.ReadAsync())
                 {
-                    Username = username ?? $"discord_{discordId}",
-                    Email = email ?? "",
-                    DiscordId = discordId,
-                    password = Guid.NewGuid().ToString(),
-                    Roles = "user",
-                    Phone = "",
-                    StyleId = defaultStyleId,
-                    Premium = false,
-                    IsVerified = false
-                };
-                _context.Users.Add(user);
-                
-                // Lưu để có IdUser
-                await _context.SaveChangesAsync();
+                    // User exists
+                    userId = Convert.ToInt32(userReader["IdUser"]);
+                    userUsername = userReader["Username"]?.ToString() ?? "";
+                    userEmail = userReader["Email"] == DBNull.Value ? null : userReader["Email"]?.ToString();
+                    userPhone = userReader["Phone"] == DBNull.Value ? null : userReader["Phone"]?.ToString();
+                    userRoles = userReader["Roles"] == DBNull.Value ? "user" : userReader["Roles"]?.ToString() ?? "user";
+                    styleId = userReader["StyleId"] == DBNull.Value ? null : userReader["StyleId"]?.ToString();
+                }
+                else
+                {
+                    // Create new user
+                    var defaultStyleId = Guid.NewGuid().ToString();
+                    var finalUsername = username ?? $"discord_{discordId}";
+                    var finalEmail = email ?? "";
 
-                // Tạo JSON object mặc định cho UserStyle
-                var defaultStylesJson = JsonSerializer.Serialize(new
-                {
-                    theme = "default",
-                    color_scheme = "light",
-                    layout = "standard",
-                    custom_css = "",
-                    preferences = new
+                    // Insert style
+                    var insertStyleSql = @"
+                        INSERT INTO style (style_id, profile_avatar, background, audio, AudioImage, AudioTitle, 
+                                          custom_cursor, description, username, location, Social)
+                        VALUES (@styleId, NULL, NULL, NULL, NULL, NULL, NULL, @description, @username, NULL, NULL)";
+
+                    await _sqlHelper.ExecuteNonQueryAsync(insertStyleSql,
+                        _sqlHelper.CreateParameter("@styleId", defaultStyleId),
+                        _sqlHelper.CreateParameter("@description", "Welcome to Mecha!"),
+                        _sqlHelper.CreateParameter("@username", finalUsername));
+
+                    // Insert user
+                    var insertUserSql = @"
+                        INSERT INTO users (Username, Email, DiscordId, password, Roles, Phone, StyleId, Premium, IsVerified, CreatedAt)
+                        VALUES (@username, @email, @discordId, @password, @roles, @phone, @styleId, @premium, @isVerified, @createdAt)";
+
+                    await _sqlHelper.ExecuteNonQueryAsync(insertUserSql,
+                        _sqlHelper.CreateParameter("@username", finalUsername),
+                        _sqlHelper.CreateParameter("@email", finalEmail),
+                        _sqlHelper.CreateParameter("@discordId", discordId),
+                        _sqlHelper.CreateParameter("@password", Guid.NewGuid().ToString()),
+                        _sqlHelper.CreateParameter("@roles", "user"),
+                        _sqlHelper.CreateParameter("@phone", ""),
+                        _sqlHelper.CreateParameter("@styleId", defaultStyleId),
+                        _sqlHelper.CreateParameter("@premium", false),
+                        _sqlHelper.CreateParameter("@isVerified", false),
+                        _sqlHelper.CreateParameter("@createdAt", DateTime.UtcNow));
+
+                    // Get new user ID
+                    var getUserIdSql = "SELECT IdUser FROM users WHERE DiscordId = @discordId";
+                    userId = Convert.ToInt32(await _sqlHelper.ExecuteScalarAsync(getUserIdSql,
+                        _sqlHelper.CreateParameter("@discordId", discordId)));
+
+                    // Create default UserStyle
+                    var defaultStylesJson = JsonSerializer.Serialize(new
                     {
-                        show_avatar = true,
-                        show_background = true,
-                        enable_animations = true
-                    }
-                });
+                        theme = "default",
+                        color_scheme = "light",
+                        layout = "standard",
+                        custom_css = "",
+                        preferences = new
+                        {
+                            show_avatar = true,
+                            show_background = true,
+                            enable_animations = true
+                        }
+                    });
 
-                // Tạo UserStyle với JSON data
-                var userStyle = new UserStyle
-                {
-                    IdUser = user.IdUser,
-                    Styles = defaultStylesJson
-                };
+                    var insertUserStyleSql = "INSERT INTO user_styles (idUser, styles) VALUES (@idUser, @styles)";
+                    await _sqlHelper.ExecuteNonQueryAsync(insertUserStyleSql,
+                        _sqlHelper.CreateParameter("@idUser", userId),
+                        _sqlHelper.CreateParameter("@styles", defaultStylesJson));
 
-                _context.UserStyles.Add(userStyle);
-                await _context.SaveChangesAsync();
-            }
+                    userUsername = finalUsername;
+                    userEmail = finalEmail;
+                    userPhone = "";
+                    userRoles = "user";
+                    styleId = defaultStyleId;
+                }
 
-            var token = _jwtService.GenerateToken(user.Username, user.Roles);
+                var token = _jwtService.GenerateToken(userUsername, userRoles);
 
-            var script = $@"
+                var script = $@"
         <script>
             window.opener.postMessage({{
                 token: '{token}',
                 user: {{
-                    idUser: {user.IdUser},
-                    username: '{user.Username}',
-                    email: '{user.Email}',
-                    phone: '{user.Phone}',
-                    roles: '{user.Roles}',
-                    styleId: '{user.StyleId}'
+                    idUser: {userId},
+                    username: '{userUsername}',
+                    email: '{userEmail ?? ""}',
+                    phone: '{userPhone ?? ""}',
+                    roles: '{userRoles}',
+                    styleId: '{styleId ?? ""}'
                 }}
             }}, '*');
             window.close();
         </script>
     ";
-            return Content(script, "text/html");
+                return Content(script, "text/html");
+            }
+            catch (Exception ex)
+            {
+                return Content($"<script>window.opener.postMessage({{ error: 'Error: {ex.Message}' }}, '*'); window.close();</script>", "text/html");
+            }
         }
 
         [HttpPost("logout")]

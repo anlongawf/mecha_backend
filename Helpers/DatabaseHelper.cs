@@ -1,43 +1,29 @@
-using System.Data;
-using Microsoft.EntityFrameworkCore;
-using Mecha.Data;
+using MySql.Data.MySqlClient;
 
 namespace Mecha.Helpers
 {
     public class DatabaseHelper
     {
-        private readonly AppDbContext _context;
+        private readonly SqlConnectionHelper _sqlHelper;
 
-        public DatabaseHelper(AppDbContext context)
+        public DatabaseHelper(SqlConnectionHelper sqlHelper)
         {
-            _context = context;
-        }
-
-        public IDbDataParameter CreateParameter(IDbCommand command, string name, object? value)
-        {
-            var parameter = command.CreateParameter();
-            parameter.ParameterName = name;
-            parameter.Value = value ?? DBNull.Value;
-            return parameter;
+            _sqlHelper = sqlHelper;
         }
 
         public async Task<(int? userId, string? currentUsername, string? currentStyleId)> GetUserInfoByIdAsync(int id)
         {
             var userSql = "SELECT IdUser, Username, StyleId FROM users WHERE IdUser = @userId";
-            using var userCommand = _context.Database.GetDbConnection().CreateCommand();
-            userCommand.CommandText = userSql;
-            var userParam = CreateParameter(userCommand, "@userId", id);
-            userCommand.Parameters.Add(userParam);
-
-            await _context.Database.OpenConnectionAsync();
-
-            using var reader = await userCommand.ExecuteReaderAsync();
+            
+            using var reader = await _sqlHelper.ExecuteReaderAsync(userSql, 
+                _sqlHelper.CreateParameter("@userId", id));
+            
             if (await reader.ReadAsync())
             {
                 return (
                     userId: Convert.ToInt32(reader["IdUser"]),
-                    currentUsername: reader["Username"]?.ToString(),
-                    currentStyleId: reader["StyleId"]?.ToString()
+                    currentUsername: reader["Username"] == DBNull.Value ? null : reader["Username"]?.ToString(),
+                    currentStyleId: reader["StyleId"] == DBNull.Value ? null : reader["StyleId"]?.ToString()
                 );
             }
 
@@ -47,20 +33,16 @@ namespace Mecha.Helpers
         public async Task<(int? userId, string? currentUsername, string? currentStyleId)> GetUserInfoByUsernameAsync(string username)
         {
             var userSql = "SELECT IdUser, Username, StyleId FROM users WHERE Username = @username";
-            using var userCommand = _context.Database.GetDbConnection().CreateCommand();
-            userCommand.CommandText = userSql;
-            var userParam = CreateParameter(userCommand, "@username", username);
-            userCommand.Parameters.Add(userParam);
-
-            await _context.Database.OpenConnectionAsync();
-
-            using var reader = await userCommand.ExecuteReaderAsync();
+            
+            using var reader = await _sqlHelper.ExecuteReaderAsync(userSql, 
+                _sqlHelper.CreateParameter("@username", username));
+            
             if (await reader.ReadAsync())
             {
                 return (
                     userId: Convert.ToInt32(reader["IdUser"]),
-                    currentUsername: reader["Username"]?.ToString(),
-                    currentStyleId: reader["StyleId"]?.ToString()
+                    currentUsername: reader["Username"] == DBNull.Value ? null : reader["Username"]?.ToString(),
+                    currentStyleId: reader["StyleId"] == DBNull.Value ? null : reader["StyleId"]?.ToString()
                 );
             }
 
@@ -69,38 +51,40 @@ namespace Mecha.Helpers
 
         public async Task<bool> IsUsernameExistsAsync(string username, int? excludeUserId = null)
         {
-            var sql = excludeUserId.HasValue 
-                ? "SELECT COUNT(*) FROM users WHERE Username = @username AND IdUser != @userId"
-                : "SELECT COUNT(*) FROM users WHERE Username = @username";
+            string sql;
+            MySqlParameter[] parameters;
 
-            using var command = _context.Database.GetDbConnection().CreateCommand();
-            command.CommandText = sql;
-            command.Parameters.Add(CreateParameter(command, "@username", username));
-            
             if (excludeUserId.HasValue)
-                command.Parameters.Add(CreateParameter(command, "@userId", excludeUserId.Value));
+            {
+                sql = "SELECT COUNT(*) FROM users WHERE Username = @username AND IdUser != @userId";
+                parameters = new[]
+                {
+                    _sqlHelper.CreateParameter("@username", username),
+                    _sqlHelper.CreateParameter("@userId", excludeUserId.Value)
+                };
+            }
+            else
+            {
+                sql = "SELECT COUNT(*) FROM users WHERE Username = @username";
+                parameters = new[] { _sqlHelper.CreateParameter("@username", username) };
+            }
 
-            var count = Convert.ToInt32(await command.ExecuteScalarAsync());
-            return count > 0;
+            var result = await _sqlHelper.ExecuteScalarAsync(sql, parameters);
+            return Convert.ToInt32(result) > 0;
         }
 
         public async Task UpdateUsernameAsync(int userId, string newUsername)
         {
             var sql = "UPDATE users SET Username = @newUsername WHERE IdUser = @userId";
-            using var command = _context.Database.GetDbConnection().CreateCommand();
-            command.CommandText = sql;
-            command.Parameters.Add(CreateParameter(command, "@newUsername", newUsername));
-            command.Parameters.Add(CreateParameter(command, "@userId", userId));
-            
-            await command.ExecuteNonQueryAsync();
+            await _sqlHelper.ExecuteNonQueryAsync(sql,
+                _sqlHelper.CreateParameter("@newUsername", newUsername),
+                _sqlHelper.CreateParameter("@userId", userId));
         }
 
         public async Task EnsureConnectionClosedAsync()
         {
-            if (_context.Database.GetDbConnection().State == ConnectionState.Open)
-            {
-                await _context.Database.CloseConnectionAsync();
-            }
+            // Connection is managed by SqlConnectionHelper, no need to close manually
+            await Task.CompletedTask;
         }
     }
 }

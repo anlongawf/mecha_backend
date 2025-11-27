@@ -1,19 +1,18 @@
-using Microsoft.EntityFrameworkCore;
-using Mecha.Data;
 using Mecha.DTO;
 using Mecha.Helpers;
+using MySql.Data.MySqlClient;
 
 namespace Mecha.Services
 {
     public class ProfileService : IProfileService
     {
-        private readonly AppDbContext _context;
+        private readonly SqlConnectionHelper _sqlHelper;
         private readonly DatabaseHelper _dbHelper;
         private readonly StyleService _styleService;
 
-        public ProfileService(AppDbContext context, DatabaseHelper dbHelper, StyleService styleService)
+        public ProfileService(SqlConnectionHelper sqlHelper, DatabaseHelper dbHelper, StyleService styleService)
         {
-            _context = context;
+            _sqlHelper = sqlHelper;
             _dbHelper = dbHelper;
             _styleService = styleService;
         }
@@ -22,22 +21,65 @@ namespace Mecha.Services
         {
             try
             {
-                var user = _context.Users
-                    .Include(u => u.Style)
-                    .FirstOrDefault(u => u.Username == username);
+                var sql = @"
+                    SELECT u.IdUser, u.Username, u.Email, u.StyleId,
+                           s.style_id, s.profile_avatar, s.background, s.audio, s.AudioImage, s.AudioTitle,
+                           s.custom_cursor, s.description, s.username as style_username, s.location
+                    FROM users u
+                    LEFT JOIN style s ON u.StyleId = s.style_id
+                    WHERE u.Username = @username";
 
-                if (user == null)
+                using var reader = await _sqlHelper.ExecuteReaderAsync(sql,
+                    _sqlHelper.CreateParameter("@username", username));
+
+                if (!await reader.ReadAsync())
+                {
                     return new ServiceResult<object>
                     {
                         IsSuccess = false,
                         Message = "User not found",
                         StatusCode = 404
                     };
+                }
+
+                var userId = Convert.ToInt32(reader["IdUser"]);
+                var userUsername = reader["Username"] == DBNull.Value ? null : reader["Username"]?.ToString();
+                var email = reader["Email"] == DBNull.Value ? null : reader["Email"]?.ToString();
+                var styleId = reader["StyleId"] == DBNull.Value ? null : reader["StyleId"]?.ToString();
+
+                if (styleId == null || reader["style_id"] == DBNull.Value)
+                {
+                    return new ServiceResult<object>
+                    {
+                        IsSuccess = true,
+                        Data = new
+                        {
+                            userId = userId,
+                            username = userUsername,
+                            email = email,
+                            style = (object?)null
+                        },
+                        StatusCode = 200
+                    };
+                }
 
                 return new ServiceResult<object>
                 {
                     IsSuccess = true,
-                    Data = BuildProfileResponse(user),
+                    Data = new
+                    {
+                        userId = userId,
+                        styleId = reader["style_id"]?.ToString(),
+                        profileAvatar = reader["profile_avatar"] == DBNull.Value ? null : reader["profile_avatar"]?.ToString(),
+                        background = reader["background"] == DBNull.Value ? null : reader["background"]?.ToString(),
+                        audio = reader["audio"] == DBNull.Value ? null : reader["audio"]?.ToString(),
+                        audioImage = reader["AudioImage"] == DBNull.Value ? null : reader["AudioImage"]?.ToString(),
+                        audioTitle = reader["AudioTitle"] == DBNull.Value ? null : reader["AudioTitle"]?.ToString(),
+                        customCursor = reader["custom_cursor"] == DBNull.Value ? null : reader["custom_cursor"]?.ToString(),
+                        description = reader["description"] == DBNull.Value ? null : reader["description"]?.ToString(),
+                        username = reader["style_username"] == DBNull.Value ? null : reader["style_username"]?.ToString(),
+                        location = reader["location"] == DBNull.Value ? null : reader["location"]?.ToString()
+                    },
                     StatusCode = 200
                 };
             }
@@ -56,22 +98,65 @@ namespace Mecha.Services
         {
             try
             {
-                var user = await _context.Users
-                    .Include(u => u.Style)
-                    .FirstOrDefaultAsync(u => u.IdUser == id);
+                var sql = @"
+                    SELECT u.IdUser, u.Username, u.Email, u.StyleId,
+                           s.style_id, s.profile_avatar, s.background, s.audio, s.AudioImage, s.AudioTitle,
+                           s.custom_cursor, s.description, s.username as style_username, s.location
+                    FROM users u
+                    LEFT JOIN style s ON u.StyleId = s.style_id
+                    WHERE u.IdUser = @id";
 
-                if (user == null)
+                using var reader = await _sqlHelper.ExecuteReaderAsync(sql,
+                    _sqlHelper.CreateParameter("@id", id));
+
+                if (!await reader.ReadAsync())
+                {
                     return new ServiceResult<object>
                     {
                         IsSuccess = false,
                         Message = "User not found",
                         StatusCode = 404
                     };
+                }
+
+                var userId = Convert.ToInt32(reader["IdUser"]);
+                var userUsername = reader["Username"] == DBNull.Value ? null : reader["Username"]?.ToString();
+                var email = reader["Email"] == DBNull.Value ? null : reader["Email"]?.ToString();
+                var styleId = reader["StyleId"] == DBNull.Value ? null : reader["StyleId"]?.ToString();
+
+                if (styleId == null || reader["style_id"] == DBNull.Value)
+                {
+                    return new ServiceResult<object>
+                    {
+                        IsSuccess = true,
+                        Data = new
+                        {
+                            userId = userId,
+                            username = userUsername,
+                            email = email,
+                            style = (object?)null
+                        },
+                        StatusCode = 200
+                    };
+                }
 
                 return new ServiceResult<object>
                 {
                     IsSuccess = true,
-                    Data = BuildProfileResponse(user),
+                    Data = new
+                    {
+                        userId = userId,
+                        styleId = reader["style_id"]?.ToString(),
+                        profileAvatar = reader["profile_avatar"] == DBNull.Value ? null : reader["profile_avatar"]?.ToString(),
+                        background = reader["background"] == DBNull.Value ? null : reader["background"]?.ToString(),
+                        audio = reader["audio"] == DBNull.Value ? null : reader["audio"]?.ToString(),
+                        audioImage = reader["AudioImage"] == DBNull.Value ? null : reader["AudioImage"]?.ToString(),
+                        audioTitle = reader["AudioTitle"] == DBNull.Value ? null : reader["AudioTitle"]?.ToString(),
+                        customCursor = reader["custom_cursor"] == DBNull.Value ? null : reader["custom_cursor"]?.ToString(),
+                        description = reader["description"] == DBNull.Value ? null : reader["description"]?.ToString(),
+                        username = reader["style_username"] == DBNull.Value ? null : reader["style_username"]?.ToString(),
+                        location = reader["location"] == DBNull.Value ? null : reader["location"]?.ToString()
+                    },
                     StatusCode = 200
                 };
             }
@@ -98,8 +183,12 @@ namespace Mecha.Services
 
             try
             {
-                var user = await _context.Users.FindAsync(id);
-                if (user == null)
+                // Check if user exists
+                var checkUserSql = "SELECT COUNT(*) FROM users WHERE IdUser = @id";
+                var userExists = Convert.ToInt32(await _sqlHelper.ExecuteScalarAsync(checkUserSql,
+                    _sqlHelper.CreateParameter("@id", id))) > 0;
+
+                if (!userExists)
                     return new ServiceResult<object>
                     {
                         IsSuccess = false,
@@ -107,7 +196,7 @@ namespace Mecha.Services
                         StatusCode = 404
                     };
 
-                if (await _context.Users.AnyAsync(u => u.Username == newUsername))
+                if (await _dbHelper.IsUsernameExistsAsync(newUsername, id))
                     return new ServiceResult<object>
                     {
                         IsSuccess = false,
@@ -115,8 +204,7 @@ namespace Mecha.Services
                         StatusCode = 409
                     };
 
-                user.Username = newUsername;
-                await _context.SaveChangesAsync();
+                await _dbHelper.UpdateUsernameAsync(id, newUsername);
 
                 return new ServiceResult<object>
                 {
@@ -220,10 +308,6 @@ namespace Mecha.Services
                     StatusCode = 500
                 };
             }
-            finally
-            {
-                await _dbHelper.EnsureConnectionClosedAsync();
-            }
         }
 
         public async Task<ServiceResult<object>> UpdateProfileByUsernameAsync(string username, UpdateProfileDto dto)
@@ -268,33 +352,6 @@ namespace Mecha.Services
                     StatusCode = 500
                 };
             }
-        }
-
-        private object BuildProfileResponse(dynamic user)
-        {
-            if (user.Style == null)
-                return new
-                {
-                    userId = user.IdUser,
-                    username = user.Username,
-                    email = user.Email,
-                    style = (object?)null
-                };
-
-            return new
-            {
-                userId = user.IdUser,
-                styleId = user.Style.StyleId,
-                profileAvatar = user.Style.ProfileAvatar,
-                background = user.Style.Background,
-                audio = user.Style.Audio,
-                audioImage = user.Style.AudioImage,
-                audioTitle = user.Style.AudioTitle,
-                customCursor = user.Style.CustomCursor,
-                description = user.Style.Description,
-                username = user.Style.Username,
-                location = user.Style.Location
-            };
         }
     }
 }

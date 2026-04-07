@@ -1,6 +1,45 @@
-# Mecha API Documentation
+# Mecha Backend
 
-This document provides a comprehensive guide to the Mecha Backend API.
+Mecha is a robust backend system designed for managing user profiles, custom styles, shop interactions, and social features.
+
+## Technologies
+- **Framework**: .NET 9.0 (ASP.NET Core)
+- **Database**: MariaDB / MySQL
+- **ORM**: Raw SQL via `SqlConnectionHelper`
+- **Authentication**: JWT & Cookie-based, with Discord OAuth support.
+
+## Getting Started
+
+### Prerequisites
+- .NET 9.0 SDK
+- MariaDB / MySQL server
+
+### Configuration
+Update `appsettings.json` with your database connection string and JWT settings:
+```json
+{
+  "ConnectionStrings": {
+    "MariaDb": "Server=localhost;Database=mecha;Uid=root;Pwd=...;"
+  },
+  "Jwt": {
+    "Key": "your_very_secure_key",
+    "Issuer": "Mecha",
+    "Audience": "MechaUsers"
+  }
+}
+```
+
+### Installation
+1. Clone the repository.
+2. Run the application:
+   ```bash
+   dotnet run
+   ```
+3. The database will be automatically initialized on the first run.
+
+---
+
+# API Documentation
 
 ## Base URL
 `http://localhost:5000/api` (Development)
